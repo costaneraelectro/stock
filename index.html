@@ -145,6 +145,24 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 .lightbox .lbcap{color:#fff; margin-top:14px; font-weight:700; font-size:14px; text-align:center}
 .lightbox .lbsku{color:#cbd5e1; font-size:12px; margin-top:4px}
 
+/* Tabla filtrada (fondo blanco) */
+#tableView{position:fixed; inset:0; z-index:78; background:#fff; color:#12151b; display:none; flex-direction:column}
+#tableView.show{display:flex}
+.tvhead{display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink)}
+.tvhead .t{font-weight:900; flex:1; font-size:16px}
+.tvclose{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.12);color:var(--accent-ink);font-size:20px;display:grid;place-items:center}
+.tvbar{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 14px; font-size:12.5px; color:#555; background:#fff; border-bottom:1px solid #eee}
+.tvbar button{font-weight:800;color:#146c2e;background:#eaf6e0;border:1px solid #cfe8bd;padding:7px 12px;border-radius:9px;font-size:12.5px}
+.tvscroll{flex:1; overflow:auto; -webkit-overflow-scrolling:touch; background:#fff}
+table.stk{border-collapse:collapse; width:100%; font-size:12px; background:#fff; color:#12151b}
+table.stk th{position:sticky; top:0; background:#eef2f5; color:#12151b; font-weight:800; text-align:left; padding:9px 10px; border-bottom:2px solid #d7dde3; white-space:nowrap}
+table.stk td{padding:8px 10px; border-bottom:1px solid #eef0f2; white-space:nowrap; vertical-align:top}
+table.stk td.desc{white-space:normal; min-width:190px}
+table.stk td.num{text-align:right; font-weight:800}
+table.stk td.no{color:#b91c1c}
+table.stk tr:nth-child(even) td{background:#fafbfc}
+#btnTable{margin-top:2px}
+
 /* Barcode modal */
 .bcwrap{position:fixed; inset:0; z-index:72; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; padding:24px}
 .bcwrap.show{display:flex}
@@ -282,6 +300,7 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
     </div>
 
     <div class="count"><span id="count"></span><button class="imgbtn hide" id="onlyLow">Solo stock bajo</button></div>
+    <button class="btn primary hide" id="btnTable" style="width:100%">📋 Mostrar tabla</button>
     <div class="list" id="list"></div>
   </main>
 </div>
@@ -303,6 +322,12 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 </div>
 
 <!-- Barcode modal -->
+<div id="tableView">
+  <div class="tvhead"><div class="t" id="tvTitle">Tabla filtrada</div><button class="tvclose" id="tvClose">×</button></div>
+  <div class="tvbar"><span id="tvInfo"></span><button id="tvCopy">⧉ Copiar</button></div>
+  <div class="tvscroll"><table class="stk" id="tvTable"></table></div>
+</div>
+
 <div class="bcwrap" id="bcwrap">
   <div class="bccard">
     <svg id="bcsvg"></svg>
@@ -615,12 +640,20 @@ function distinct(getCode,getName,filterFn){ var seen={},out=[];
 function fillSelect(sel,items,cur,allLabel){ var h='<option value="">'+allLabel+'</option>';
   items.forEach(function(it){h+='<option value="'+esc(it.code)+'"'+(it.code===cur?' selected':'')+'>'+esc(it.name||it.code)+'</option>';});
   sel.innerHTML=h; if(cur&&!items.some(function(it){return it.code===cur;})) sel.value=''; }
+// Filtros progresivos: cada lista muestra solo lo compatible con TODOS los otros filtros activos
+function passExcept(p,ex){
+  if(ex!=='sub'   && FILT.sub   && p.sub!==FILT.sub) return false;
+  if(ex!=='clase' && FILT.clase && p.clase!==FILT.clase) return false;
+  if(ex!=='subc'  && FILT.subc  && p.subc!==FILT.subc) return false;
+  if(ex!=='marca' && FILT.marca && normBrand(p.marca)!==FILT.marca) return false;
+  return true;
+}
 function buildFilters(){
-  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},null),FILT.sub,'Todas las sublíneas');
-  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return (!FILT.sub||p.sub===FILT.sub);}),FILT.clase,'Todas las clases');
-  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return (!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase);}),FILT.subc,'Todas las subclases');
-  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return (!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase)&&(!FILT.subc||p.subc===FILT.subc);}),FILT.marca,'Todas las marcas');
-  // Sincroniza FILT con lo que quedó realmente seleccionado (si algo dejó de ser válido, se limpia)
+  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return passExcept(p,'sub');}),FILT.sub,'Todas las sublíneas');
+  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return passExcept(p,'clase');}),FILT.clase,'Todas las clases');
+  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return passExcept(p,'subc');}),FILT.subc,'Todas las subclases');
+  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return passExcept(p,'marca');}),FILT.marca,'Todas las marcas');
+  // Sincroniza FILT con lo que quedó seleccionado (si algo dejó de ser válido, se limpia)
   FILT.sub=$('fSub').value; FILT.clase=$('fClase').value; FILT.subc=$('fSubc').value; FILT.marca=$('fMarca').value;
   var active=[FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
   $('clrFilters').classList.toggle('hide',active===0);
@@ -644,7 +677,7 @@ function filtered(){ var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace
     return true; });
 }
 function render(){
-  var low=lowThr(); var list=$('list');
+  var low=lowThr(); var list=$('list'); $('btnTable').classList.add('hide');
   if(!PRODUCTS.length){ $('count').textContent=''; $('onlyLow').classList.add('hide');
     list.innerHTML='<div class="empty"><div class="big">📦</div><h3>Aún no hay stock cargado</h3><p>El administrador debe subir el archivo diario de inventario en <b>Configuración</b>.</p></div>'; return; }
   var anyFilter=!!(FILT.q||FILT.sub||FILT.clase||FILT.subc||FILT.marca||FILT.low);
@@ -652,6 +685,8 @@ function render(){
   if(!anyFilter){ $('count').textContent=''; $('onlyLow').classList.remove('hide'); $('onlyLow').textContent='Solo stock bajo';
     list.innerHTML='<div class="empty"><div class="big">🔎</div><h3>Busca o filtra</h3><p>Escanea un código, escribe un SKU/EAN, o usa los filtros para ver productos.</p></div>'; return; }
   var arr=filtered();
+  // Botón "Mostrar tabla": cuando hay marca + (sublínea o clase o subclase)
+  if(FILT.marca && (FILT.sub||FILT.clase||FILT.subc) && arr.length) $('btnTable').classList.remove('hide');
   $('count').textContent = arr.length+' resultado'+(arr.length===1?'':'s');
   $('onlyLow').classList.remove('hide'); $('onlyLow').textContent=FILT.low?'Quitar filtro':'Solo stock bajo';
   if(!arr.length){ list.innerHTML='<div class="empty"><div class="big">🔍</div><h3>Sin resultados</h3><p>Prueba con otro SKU, EAN o quita algún filtro.</p></div>'; return; }
@@ -677,6 +712,40 @@ function render(){
   Array.prototype.forEach.call(list.querySelectorAll('[data-bc]'),function(b){b.onclick=function(e){e.stopPropagation();showCardBarcode(b.getAttribute('data-bc'));};});
 }
 function showCardBarcode(sku){ var p=findBySku(sku); if(!p)return; var pe=primaryEan(p); if(pe) showBarcode(pe.code); else toast('Este producto no tiene EAN registrado'); }
+
+/* ===== Tabla filtrada ===== */
+var TVROWS=[];
+function tableRows(){ var arr=filtered(), rows=[];
+  arr.forEach(function(p){ var es=eanObjs(p);
+    if(!es.length){ rows.push({p:p,ean:'',st:p.stock}); }
+    else es.forEach(function(e){ rows.push({p:p,ean:e.code,st:(e.stock==null?'':e.stock)}); }); });
+  return {arr:arr,rows:rows};
+}
+function openTable(){
+  var r=tableRows(); TVROWS=r.rows;
+  var h='<thead><tr><th>Sublínea</th><th>Clase</th><th>Subclase</th><th>Marca</th><th>SKU</th><th>EAN</th><th>Descripción</th><th>Cant.</th></tr></thead><tbody>';
+  r.rows.forEach(function(x){ var p=x.p, no=(x.st!==''&&x.st<=0);
+    h+='<tr><td>'+esc(p.subN||p.sub)+'</td><td>'+esc(p.claseN||p.clase)+'</td><td>'+esc(p.subcN||p.subc)+'</td><td>'+esc(brandDisplay(p.marca))+'</td>'+
+       '<td>'+esc(p.sku)+'</td><td>'+esc(x.ean)+'</td><td class="desc">'+esc(p.desc)+'</td>'+
+       '<td class="num'+(no?' no':'')+'">'+esc(String(x.st))+'</td></tr>';
+  });
+  h+='</tbody>';
+  $('tvTable').innerHTML=h;
+  var lbl=[FILT.marca?brandDisplay(FILT.marca):'',selText('fSubc'),selText('fClase'),selText('fSub')].filter(Boolean).join(' · ');
+  $('tvTitle').textContent=lbl||'Tabla filtrada';
+  $('tvInfo').textContent=r.arr.length+' productos · '+r.rows.length+' filas';
+  $('tableView').classList.add('show');
+}
+function selText(id){ var s=$(id); if(!s||!s.value) return ''; return s.options[s.selectedIndex].text; }
+function copyTable(){
+  var head=['Sublínea','Clase','Subclase','Marca','SKU','EAN','Descripción','Cantidad'];
+  var lines=[head.join('\t')];
+  TVROWS.forEach(function(x){ var p=x.p;
+    lines.push([p.subN||p.sub,p.claseN||p.clase,p.subcN||p.subc,brandDisplay(p.marca),p.sku,x.ean,p.desc,x.st].join('\t')); });
+  var txt=lines.join('\n');
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){toast('Tabla copiada ('+TVROWS.length+' filas)');}).catch(function(){toast('No se pudo copiar');});
+  else toast('Copia no disponible');
+}
 
 /* ===== Imagen (lightbox) ===== */
 function imgUrl(sku){ return 'https://media.falabella.com/falabellaCL/'+encodeURIComponent((sku||'').trim())+'/public'; }
@@ -924,8 +993,11 @@ function init(){
   $('qclr').onclick=function(){ FILT.q=''; $('q').value=''; this.classList.add('hide'); render(); };
   $('clrFilters').onclick=function(){ FILT.sub=FILT.clase=FILT.subc=FILT.marca=''; FILT.low=false; buildFilters(); render(); };
   $('onlyLow').onclick=function(){ FILT.low=!FILT.low; buildFilters(); render(); };
-  $('fSub').onchange=function(){ FILT.sub=this.value; FILT.clase=FILT.subc=''; buildFilters(); render(); };
-  $('fClase').onchange=function(){ FILT.clase=this.value; FILT.subc=''; buildFilters(); render(); };
+  $('btnTable').onclick=openTable;
+  $('tvClose').onclick=function(){ $('tableView').classList.remove('show'); };
+  $('tvCopy').onclick=copyTable;
+  $('fSub').onchange=function(){ FILT.sub=this.value; buildFilters(); render(); };
+  $('fClase').onchange=function(){ FILT.clase=this.value; buildFilters(); render(); };
   $('fSubc').onchange=function(){ FILT.subc=this.value; buildFilters(); render(); };
   $('fMarca').onchange=function(){ FILT.marca=this.value; buildFilters(); render(); };
 
