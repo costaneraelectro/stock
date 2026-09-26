@@ -372,10 +372,10 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
     </div>
 
     <div class="filters" id="filters">
-      <div><label>Sublínea</label><input id="fSub" list="dlSub" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlSub"></datalist></div>
-      <div><label>Clase</label><input id="fClase" list="dlClase" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlClase"></datalist></div>
-      <div><label>Subclase</label><input id="fSubc" list="dlSubc" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlSubc"></datalist></div>
-      <div><label>Marca</label><input id="fMarca" list="dlMarca" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlMarca"></datalist></div>
+      <div><label>Sublínea</label><select id="fSub"></select></div>
+      <div><label>Clase</label><select id="fClase"></select></div>
+      <div><label>Subclase</label><select id="fSubc"></select></div>
+      <div><label>Marca</label><select id="fMarca"></select></div>
       <div class="fclear"><button id="clrFilters" class="hide">Limpiar filtros ×</button></div>
     </div>
 
@@ -835,10 +835,12 @@ function resolveCombo(inpId){
   FILT[k] = v ? (inp._map[up(v)]!=null ? inp._map[up(v)] : '') : '';
 }
 function buildFilters(){
-  fillCombo('fSub','dlSub',distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return passExcept(p,'sub');}),FILT.sub,'Todas las sublíneas');
-  fillCombo('fClase','dlClase',distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return passExcept(p,'clase');}),FILT.clase,'Todas las clases');
-  fillCombo('fSubc','dlSubc',distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return passExcept(p,'subc');}),FILT.subc,'Todas las subclases');
-  fillCombo('fMarca','dlMarca',distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return passExcept(p,'marca');}),FILT.marca,'Todas las marcas');
+  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return passExcept(p,'sub');}),FILT.sub,'Todas las sublíneas');
+  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return passExcept(p,'clase');}),FILT.clase,'Todas las clases');
+  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return passExcept(p,'subc');}),FILT.subc,'Todas las subclases');
+  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return passExcept(p,'marca');}),FILT.marca,'Todas las marcas');
+  // sincroniza FILT con lo seleccionado (si algo dejó de ser válido, se limpia)
+  FILT.sub=$('fSub').value; FILT.clase=$('fClase').value; FILT.subc=$('fSubc').value; FILT.marca=$('fMarca').value;
   var active=[FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
   $('clrFilters').classList.toggle('hide',active===0);
 }
@@ -1609,9 +1611,7 @@ function init(){
   $('tvClose').onclick=function(){ $('tableView').classList.remove('show'); };
   $('tvCopy').onclick=copyTable;
   ['fSub','fClase','fSubc','fMarca'].forEach(function(id){
-    var inp=$(id);
-    inp.addEventListener('change',function(){ resolveCombo(id); buildFilters(); render(); });
-    inp.addEventListener('input',function(){ if(!inp.value.trim()){ FILT[keyForCombo(id)]=''; buildFilters(); render(); } });
+    $(id).addEventListener('change',function(){ FILT[keyForCombo(id)]=this.value; buildFilters(); render(); });
   });
 
   // Overlays
