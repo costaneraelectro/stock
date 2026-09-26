@@ -848,15 +848,23 @@ function lowThr(){ var v=parseInt(localStorage.getItem(K.LOW)||'3',10); return i
 function stockClass(s,low){ if(s<=0)return 'no'; if(s<low)return 'lo'; return 'hi'; }
 function stockLabel(s,low){ if(s<=0)return 'Sin stock'; if(s<low)return 'Quedan '+s; return s+' disp.'; }
 function stockBadge(s,low){ var n=s<=0?0:s; var t=s<=0?'sin stock':(s<low?(s===1?'queda':'quedan'):'disp.'); return '<span class="n">'+n+'</span><span class="t">'+t+'</span>'; }
-function filtered(){ var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace(/\D/g,'');
+// índice de búsqueda precomputado (evita normalizar 2241 productos en cada tecla)
+var IDXREF=null;
+function ensureIdx(){ if(IDXREF===PRODUCTS) return;
+  for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i];
+    p._s=up((p.desc||'')+' '+brandDisplay(p.marca)+' '+p.sku);
+    p._e=eanObjs(p).map(function(e){return e.code;}).join(' ');
+  } IDXREF=PRODUCTS;
+}
+function filtered(){ ensureIdx(); var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace(/\D/g,'');
   return PRODUCTS.filter(function(p){
     if(FILT.sub&&p.sub!==FILT.sub)return false;
     if(FILT.clase&&p.clase!==FILT.clase)return false;
     if(FILT.subc&&p.subc!==FILT.subc)return false;
     if(FILT.marca&&normBrand(p.marca)!==FILT.marca)return false;
     if(FILT.low&&!(p.stock<low))return false;
-    if(q){ var hit=up(p.desc).indexOf(q)>=0||p.sku.indexOf(q)>=0||brandDisplay(p.marca).toUpperCase().indexOf(q)>=0;
-      if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||eanObjs(p).some(function(e){return e.code.indexOf(qd)>=0;}); }
+    if(q){ var hit=p._s.indexOf(q)>=0;
+      if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||p._e.indexOf(qd)>=0; }
       if(!hit)return false; }
     return true; });
 }
@@ -874,7 +882,7 @@ function render(){
   $('count').textContent = arr.length+' resultado'+(arr.length===1?'':'s');
   $('onlyLow').classList.remove('hide'); $('onlyLow').textContent=FILT.low?'Quitar filtro':'Solo stock bajo';
   if(!arr.length){ list.innerHTML='<div class="empty"><div class="big">🔍</div><h3>Sin resultados</h3><p>Prueba con otro SKU, EAN o quita algún filtro.</p></div>'; return; }
-  var html='', slice=arr.slice(0,300);
+  var html='', slice=arr.slice(0,150);
   for(var i=0;i<slice.length;i++){ var p=slice[i], sc=stockClass(p.stock,low);
     html+='<div class="card" data-sku="'+esc(p.sku)+'">'+
       brandLogo(p.marca)+
@@ -889,7 +897,7 @@ function render(){
       '<div class="cright"><div class="stock '+sc+'">'+stockBadge(p.stock,low)+'</div></div>'+
     '</div>';
   }
-  if(arr.length>300) html+='<div style="text-align:center;color:var(--mut);font-size:12px;padding:8px">Mostrando 300 de '+arr.length+'. Afina la búsqueda para ver más.</div>';
+  if(arr.length>150) html+='<div style="text-align:center;color:var(--mut);font-size:12px;padding:8px">Mostrando 150 de '+arr.length+'. Afina la búsqueda para ver más.</div>';
   list.innerHTML=html;
   Array.prototype.forEach.call(list.querySelectorAll('[data-open]'),function(b){b.onclick=function(){openDetail(b.getAttribute('data-open'));};});
   Array.prototype.forEach.call(list.querySelectorAll('[data-img]'),function(b){b.onclick=function(e){e.stopPropagation();openImage(b.getAttribute('data-img'),b.getAttribute('data-name'));};});
@@ -1593,7 +1601,7 @@ function init(){
   $('manualEan').addEventListener('keydown',function(e){ if(e.key==='Enter'){var v=this.value.trim();if(v)onScanResult(v);} });
 
   // Búsqueda + filtros
-  $('q').addEventListener('input',function(){ FILT.q=this.value; $('qclr').classList.toggle('hide',!this.value); render(); });
+  var qT; $('q').addEventListener('input',function(){ FILT.q=this.value; $('qclr').classList.toggle('hide',!this.value); clearTimeout(qT); qT=setTimeout(render,130); });
   $('qclr').onclick=function(){ FILT.q=''; $('q').value=''; this.classList.add('hide'); render(); };
   $('clrFilters').onclick=function(){ FILT.sub=FILT.clase=FILT.subc=FILT.marca=''; FILT.low=false; buildFilters(); render(); };
   $('onlyLow').onclick=function(){ FILT.low=!FILT.low; buildFilters(); render(); };
