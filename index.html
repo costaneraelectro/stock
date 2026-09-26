@@ -297,6 +297,9 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .dchip.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 .dsel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
 .dsel select{padding:9px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:13px}
+.dsel4{grid-template-columns:1fr 1fr}
+.dsel4 select{width:100%}
+.dsel4 label{display:block;font-size:10px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin:0 0 3px 2px}
 .drow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
 .drow label{font-size:12px;font-weight:700}
 .drow input{padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
@@ -450,8 +453,9 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
           <div class="invkpi"><b id="ikTaken">0</b><span>Contados</span></div>
           <div class="invkpi"><b id="ikFalta">0</b><span>Faltan</span></div>
         </div>
+        <button class="btn primary" id="iStart" style="width:100%;margin-top:10px">▶ Comenzar a escanear</button>
       </div>
-      <div class="invcard">
+      <div class="invcard hide" id="iScanCard">
         <h4>Escanear · escribir código o descripción</h4>
         <div class="invscan">
           <input id="iCode" autocomplete="off" placeholder="UPC/EAN, SKU o parte de la descripción" enterkeyhint="done">
@@ -464,11 +468,11 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
         </div>
         <div id="iMatches"></div>
       </div>
-      <div class="invcard">
+      <div class="invcard hide" id="iLastCard">
         <h4>Últimos tomados</h4>
         <div id="iLast"><div style="color:var(--mut);font-size:13px">Aún no tomas nada.</div></div>
       </div>
-      <button class="btn primary" id="iFinish" style="width:100%">🏁 Finalizar inventario</button>
+      <button class="btn primary hide" id="iFinish" style="width:100%">🏁 Finalizar inventario</button>
     </div>
 
     <div id="itDiff" class="hide">
@@ -1138,7 +1142,7 @@ function pickFile(){ $('file2').click(); }
 /* ============================================================
    TOMAR INVENTARIO
    ============================================================ */
-var INV={open:false, scope:{sub:'',marca:'',clase:'',subc:''}, counts:{}, history:[], notFound:[], docId:'', name:'', status:'activo', startTs:0, pushT:null};
+var INV={open:false, started:false, scope:{sub:'',marca:'',clase:'',subc:''}, counts:{}, history:[], notFound:[], docId:'', name:'', status:'activo', startTs:0, pushT:null};
 function canInv(){ return !!(CURRENT && (CURRENT.admin || CURRENT.inv)); }
 function invUid(){ return (CURRENT && (CURRENT.uid||CURRENT.username)) || 'local'; }
 function invLoadLocal(){ try{ var s=JSON.parse(localStorage.getItem(K.INV)); if(s && s.docId) return s; }catch(e){} return null; }
@@ -1155,12 +1159,14 @@ function openInv(){
     INV.docId=prev.docId; INV.name=prev.name||''; INV.scope=prev.scope||{sub:'',marca:'',clase:'',subc:''};
     INV.counts=prev.counts||{}; INV.history=prev.history||[]; INV.notFound=prev.notFound||[]; INV.status=prev.status||'activo'; INV.startTs=prev.startTs||Date.now();
   } else { invReset(true); }
+  INV.started = Object.keys(INV.counts).length>0 || (INV.notFound&&INV.notFound.length>0);
   INV.open=true; $('inv').classList.add('show');
   $('invWho').textContent = ' · '+(INV.name||'');
   $('invSuperTab').classList.toggle('hide', !isAdmin());
   invSwitch('take'); invBuildScope(); renderInv();
-  setTimeout(function(){ $('iCode').focus(); },200);
+  if(INV.started) setTimeout(function(){ var c=$('iCode'); if(c)c.focus(); },200);
 }
+function invStart(){ INV.started=true; renderInv(); setTimeout(function(){ var c=$('iCode'); if(c)c.focus(); },150); }
 function closeInv(){ INV.open=false; $('inv').classList.remove('show'); stopSuper(); }
 function invSwitch(t){
   ['take','diff','nf','super'].forEach(function(x){ $('it'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hide',x!==t); });
@@ -1195,9 +1201,15 @@ function invAdd(codeRaw,qty){
   qty=qty||1; var code=(codeRaw||'').trim(); if(!code) return;
   var p=findByEan(code) || findBySku(code);
   if(!p){ beepUnknown(); if(navigator.vibrate)navigator.vibrate([90,60,90,60,120]);
-    var ex=null; for(var n=0;n<INV.notFound.length;n++){ if(INV.notFound[n].code===code){ex=INV.notFound[n];break;} }
-    if(ex){ ex.qty+=qty; } else { INV.notFound.unshift({code:code,qty:qty,ts:Date.now()}); }
-    invSaveLocal(); toast('⛔ NO reconocido: '+esc(code)+' · guardado en Sobrantes'); return; }
+    toast('⛔ Código NO reconocido: '+esc(code));
+    setTimeout(function(){
+      var add=confirm('⛔ Código NO reconocido:\n\n'+code+'\n\n¿Agregarlo a la pestaña "Sobrantes" (No reconocidos) para revisar después?\n\nAceptar = agregar    ·    Cancelar = eliminar (ignorar)');
+      if(add){ var ex=null; for(var n=0;n<INV.notFound.length;n++){ if(INV.notFound[n].code===code){ex=INV.notFound[n];break;} }
+        if(ex){ ex.qty+=qty; } else { INV.notFound.unshift({code:code,qty:qty,ts:Date.now()}); }
+        invSaveLocal(); toast('Guardado en Sobrantes: '+esc(code)); }
+      else { toast('Código eliminado (no se guardó)'); }
+    }, 120);
+    return; }
   if(!invPass(p,'')){ beep(false); toast('Fuera del alcance elegido: '+esc(p.desc||p.sku)); return; }
   INV.counts[p.sku]=(INV.counts[p.sku]||0)+qty;
   INV.history.unshift({sku:p.sku,qty:qty,ts:Date.now()}); INV.history=INV.history.slice(0,60);
@@ -1209,6 +1221,12 @@ function invAdd(codeRaw,qty){
 }
 function invStat(p){ var fis=INV.counts[p.sku]||0, dif=p.stock-fis, cls=fis===0?'lo':(fis>p.stock?'ex':(fis<p.stock?'lo':'ok')); return {fis:fis,dif:dif,cls:cls}; }
 function renderInv(){
+  $('iScanCard').classList.toggle('hide', !INV.started);
+  $('iLastCard').classList.toggle('hide', !INV.started);
+  $('iFinish').classList.toggle('hide', !INV.started);
+  $('iStart').classList.toggle('hide', INV.started);
+  var lockable=$('itTake').querySelectorAll('.invscope input');
+  Array.prototype.forEach.call(lockable,function(i){ i.disabled=INV.started; i.style.opacity=INV.started?'.6':'1'; });
   var ps=invScoped();
   $('ikProd').textContent=ps.length;
   var taken=0,falta=0; ps.forEach(function(p){ var s=invStat(p); if(p.sku in INV.counts)taken++; if(s.fis<p.stock)falta+=(p.stock-s.fis); });
@@ -1240,13 +1258,19 @@ function invMatches(txt){
   Array.prototype.forEach.call(box.querySelectorAll('[data-adds]'),function(b){ b.onclick=function(){ invAdd(b.getAttribute('data-adds'), +($('iQty').value||1)); }; });
   Array.prototype.forEach.call(box.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
 }
-var invDiff={filter:'all',marca:'',clase:'',subc:'',min:0,q:''};
+var invDiff={filter:'all',sub:'',marca:'',clase:'',subc:'',min:0,q:''};
+// pasa el producto por los filtros de diferencias, ignorando el propio (progresivo)
+function diffPass(p,ex){
+  if(ex!=='sub' && invDiff.sub && p.sub!==invDiff.sub) return false;
+  if(ex!=='marca' && invDiff.marca && normBrand(p.marca)!==invDiff.marca) return false;
+  if(ex!=='clase' && invDiff.clase && p.clase!==invDiff.clase) return false;
+  if(ex!=='subc' && invDiff.subc && p.subc!==invDiff.subc) return false;
+  return true;
+}
 function invDiffList(){
   var q=up(invDiff.q||'').trim(), qd=q.replace(/\D/g,'');
   var ps=invScoped().filter(function(p){
-    if(invDiff.marca && normBrand(p.marca)!==invDiff.marca) return false;
-    if(invDiff.clase && p.clase!==invDiff.clase) return false;
-    if(invDiff.subc && p.subc!==invDiff.subc) return false;
+    if(!diffPass(p,'')) return false;
     if(q){ var hit=up(p.desc).indexOf(q)>=0||up(brandDisplay(p.marca)).indexOf(q)>=0||p.sku.indexOf(q)>=0;
       if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||eanObjs(p).some(function(e){return e.code.indexOf(qd)>=0;}); }
       if(!hit) return false; }
@@ -1261,22 +1285,26 @@ function invDiffList(){
   ps.sort(function(a,b){ return Math.abs(invStat(b).dif)-Math.abs(invStat(a).dif); });
   return ps;
 }
+function diffDistinct(getCode,getName,ex){ var seen={},out=[]; var sc=invScoped();
+  for(var i=0;i<sc.length;i++){ var p=sc[i]; if(!diffPass(p,ex))continue; var c=getCode(p); if(!c)continue; if(!seen[c]){seen[c]=1;out.push({k:c,d:getName(p)});} }
+  out.sort(function(a,b){return String(a.d).localeCompare(String(b.d),'es');}); return out; }
 function renderInvDiff(){
   var ps=invDiffList();
   var chips=[['all','Todos'],['difs','Con diferencia'],['falta','Faltantes'],['exc','Excedentes'],['sin','Sin contar']];
-  var opt=function(list,cur){ return '<option value="">Todas</option>'+list.map(function(x){return '<option value="'+esc(x.k)+'"'+(x.k===cur?' selected':'')+'>'+esc(x.d)+'</option>';}).join(''); };
-  var sc=invScoped();
-  var marcas=[]; var seenm={}; sc.forEach(function(p){var k=normBrand(p.marca); if(k&&!seenm[k]){seenm[k]=1;marcas.push({k:k,d:brandDisplay(p.marca)});}}); marcas.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
-  var clases=[]; var seenc={}; sc.forEach(function(p){if(p.clase&&!seenc[p.clase]){seenc[p.clase]=1;clases.push({k:p.clase,d:p.claseN||p.clase});}}); clases.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
-  var subcs=[]; var seens={}; sc.forEach(function(p){if(p.subc&&(!invDiff.clase||p.clase===invDiff.clase)&&!seens[p.subc]){seens[p.subc]=1;subcs.push({k:p.subc,d:p.subcN||p.subc});}}); subcs.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
+  var lbl=function(id,name,list,cur,allTxt){ return '<div><label>'+name+'</label><select id="'+id+'"><option value="">'+allTxt+'</option>'+list.map(function(x){return '<option value="'+esc(x.k)+'"'+(x.k===cur?' selected':'')+'>'+esc(x.d)+'</option>';}).join('')+'</select></div>'; };
+  var subs =diffDistinct(function(p){return p.sub;},function(p){return p.subN||p.sub;},'sub');
+  var marcas=diffDistinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},'marca');
+  var clases=diffDistinct(function(p){return p.clase;},function(p){return p.claseN||p.clase;},'clase');
+  var subcs =diffDistinct(function(p){return p.subc;},function(p){return p.subcN||p.subc;},'subc');
+  var CAP=400, shown=ps.slice(0,CAP);
   var h='';
   h+='<div style="margin-bottom:8px"><input id="dSearch" placeholder="🔍 Buscar producto (descripción, SKU o EAN)" autocomplete="off" value="'+esc(invDiff.q)+'" style="width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></div>';
   h+='<div class="dchips">'+chips.map(function(c){return '<button class="dchip'+(invDiff.filter===c[0]?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('')+'</div>';
-  h+='<div class="dsel"><select id="dMarca">'+opt(marcas,invDiff.marca)+'</select><select id="dClase">'+opt(clases,invDiff.clase)+'</select><select id="dSubc">'+opt(subcs,invDiff.subc)+'</select></div>';
+  h+='<div class="dsel dsel4">'+lbl('dSub','Sublínea',subs,invDiff.sub,'Todas')+lbl('dMarca','Marca',marcas,invDiff.marca,'Todas')+lbl('dClase','Clase',clases,invDiff.clase,'Todas')+lbl('dSubc','Subclase',subcs,invDiff.subc,'Todas')+'</div>';
   h+='<div class="drow"><label>Diferencia ≥ <input id="dMin" type="number" min="0" value="'+invDiff.min+'" inputmode="numeric" style="width:70px"></label><span style="color:var(--mut);font-size:11px">unidades (+ o −)</span><button class="diffbtn" id="dExp" style="margin-left:auto">⬇ Exportar diferencias</button></div>';
-  h+='<div style="font-size:12px;color:var(--mut);margin:6px 2px">'+ps.length+' productos</div>';
+  h+='<div style="font-size:12px;color:var(--mut);margin:6px 2px">'+ps.length+' productos'+(ps.length>CAP?' · mostrando '+CAP+' (afina filtros)':'')+'</div>';
   h+='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Dif</th><th></th></tr></thead><tbody>';
-  ps.forEach(function(p){ var s=invStat(p); var dtxt=s.fis===p.stock?'0':(s.fis>p.stock?'+'+(s.fis-p.stock):String(p.stock-s.fis));
+  shown.forEach(function(p){ var s=invStat(p); var dtxt=s.fis===p.stock?'0':(s.fis>p.stock?'+'+(s.fis-p.stock):String(p.stock-s.fis));
     var col=s.fis===p.stock?'':(s.fis>p.stock?'color:var(--danger)':'color:var(--warn)');
     h+='<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div>'+
        '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="margin-top:4px">🖼️ ver</button></td>'+
@@ -1287,8 +1315,9 @@ function renderInvDiff(){
   var body=$('iDiffBody'); body.innerHTML=h;
   var ds=$('dSearch'); if(ds){ ds.oninput=function(){ invDiff.q=this.value; renderInvDiff(); var e=$('dSearch'); if(e){ e.focus(); var v=e.value; e.value=''; e.value=v; } }; }
   Array.prototype.forEach.call(body.querySelectorAll('.dchip'),function(b){ b.onclick=function(){ invDiff.filter=b.getAttribute('data-f'); renderInvDiff(); }; });
+  $('dSub').onchange=function(){ invDiff.sub=this.value; renderInvDiff(); };
   $('dMarca').onchange=function(){ invDiff.marca=this.value; renderInvDiff(); };
-  $('dClase').onchange=function(){ invDiff.clase=this.value; invDiff.subc=''; renderInvDiff(); };
+  $('dClase').onchange=function(){ invDiff.clase=this.value; renderInvDiff(); };
   $('dSubc').onchange=function(){ invDiff.subc=this.value; renderInvDiff(); };
   $('dMin').onchange=function(){ invDiff.min=Math.max(0,+this.value||0); renderInvDiff(); };
   $('dExp').onclick=function(){ exportDiffCSV(ps); };
@@ -1481,6 +1510,7 @@ function init(){
   $('iPlus').onclick=function(){ $('iQty').value=(+$('iQty').value||0)+1; };
   $('iCam').onclick=function(){ INV.scanRoute=true; openScanner(); };
   $('iPaste').onclick=invPasteOpen;
+  $('iStart').onclick=invStart;
   $('iFinish').onclick=invFinish;
   ['iSub','iMarca','iClase','iSubc'].forEach(function(id){ var inp=$(id);
     inp.addEventListener('change',function(){ var v=(inp.value||'').trim(); INV.scope[invKey(id)]= v?(inp._map[up(v)]!=null?inp._map[up(v)]:''):''; invBuildScope(); renderInv(); });
