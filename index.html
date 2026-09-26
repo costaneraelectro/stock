@@ -1248,7 +1248,24 @@ function invBuildScope(){
 function invScoped(){ return PRODUCTS.filter(function(p){ return invPass(p,''); }); }
 function beep(ok){ try{ var c=new (window.AudioContext||window.webkitAudioContext)(); var o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination); o.frequency.value=ok?880:200; g.gain.value=.07; o.start(); setTimeout(function(){o.stop();c.close();},ok?90:200);}catch(e){} }
 function beepUnknown(){ try{ var c=new (window.AudioContext||window.webkitAudioContext)(); var play=function(f,at,d){ var o=c.createOscillator(),g=c.createGain(); o.type='square'; o.connect(g);g.connect(c.destination); o.frequency.value=f; g.gain.value=.09; o.start(c.currentTime+at); o.stop(c.currentTime+at+d); }; play(330,0,.16); play(150,.18,.30); setTimeout(function(){try{c.close();}catch(e){}},800);}catch(e){} }
-function invPasteOpen(){ if(!canInv())return; var t=prompt('Pega una lista de códigos (uno por línea o separados por espacio/coma):',''); if(t==null)return; var codes=t.split(/[\s,;]+/).filter(Boolean); var ok=0,bad=0; codes.forEach(function(cd){ var p=findByEan(cd)||findBySku(cd); if(p&&invPass(p,'')){ INV.counts[p.sku]=(INV.counts[p.sku]||0)+1; INV.history.unshift({sku:p.sku,qty:1,ts:Date.now()}); ok++; } else bad++; }); INV.history=INV.history.slice(0,60); invSaveLocal(); invPush(); renderInv(); toast('Pegado: '+ok+' sumados'+(bad?', '+bad+' no reconocidos':'')); }
+function invPasteOpen(){ if(!canInv())return;
+  if(!INV.started){ toast('Primero toca "Comenzar a escanear".'); return; }
+  var t=prompt('Pega una lista de códigos (uno por línea o separados por espacio/coma):',''); if(t==null)return;
+  var codes=t.split(/[\s,;]+/).map(function(c){return c.trim();}).filter(Boolean);
+  var ok=0, out=0, nf=0;
+  codes.forEach(function(cd){ var p=findByEan(cd)||findBySku(cd);
+    if(!p){ // no está en el archivo -> Sobrantes
+      var ex=null; for(var i=0;i<INV.notFound.length;i++){ if(INV.notFound[i].code===cd){ex=INV.notFound[i];break;} }
+      if(ex) ex.qty+=1; else INV.notFound.unshift({code:cd,qty:1,ts:Date.now()}); nf++; return; }
+    if(!invPass(p,'')){ out++; return; }   // existe pero fuera del alcance elegido
+    INV.counts[p.sku]=(INV.counts[p.sku]||0)+1; INV.history.unshift({sku:p.sku,qty:1,ts:Date.now()}); ok++;
+  });
+  INV.history=INV.history.slice(0,60); invSaveLocal(); invPush(); renderInv();
+  var msg='Pegado: '+ok+' sumados';
+  if(out) msg+=' · '+out+' fuera de alcance';
+  if(nf) msg+=' · '+nf+' no reconocidos (en Sobrantes)';
+  toast(msg);
+}
 function invAdd(codeRaw,qty){
   qty=qty||1; var code=(codeRaw||'').trim(); if(!code) return;
   var p=findByEan(code) || findBySku(code);
