@@ -70,7 +70,8 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 /* Filters (always visible) */
 .filters{margin-top:10px; background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px}
 .filters label{font-size:11.5px; font-weight:800; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; display:block; margin:0 0 5px 2px}
-.filters select{width:100%; padding:14px 12px; font-size:16px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.filters select,.filters input{width:100%; padding:14px 12px; font-size:16px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.filters input:focus{outline:none; border-color:var(--accent-d); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
 .filters .full{grid-column:1 / -1}
 .fclear{grid-column:1 / -1; text-align:right}
 .fclear button{font-size:12.5px; font-weight:800; color:var(--accent-d)}
@@ -230,6 +231,51 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
+.tagi{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--accent) 22%,var(--card));color:var(--accent-ink)}
+.minibtn.inv{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.inv{background:var(--accent-ink);color:#fff}
+[data-theme="dark"] .btn.inv{background:#fff;color:#12151b}
+
+/* ===== Tomar inventario (overlay) ===== */
+#inv{position:fixed; inset:0; z-index:80; background:var(--bg); color:var(--ink); display:none; flex-direction:column}
+#inv.show{display:flex}
+.invhead{display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow)}
+.invhead .t{font-weight:900; flex:1; font-size:17px; line-height:1.1}
+.invhead .t small{display:block; font-weight:700; font-size:11px; opacity:.8}
+.invx{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.12);color:var(--accent-ink);font-size:20px;display:grid;place-items:center;flex:0 0 auto}
+.invbody{flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:14px; max-width:720px; margin:0 auto; width:100%}
+.invcard{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:12px}
+.invcard h4{margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--mut)}
+.invscope{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.invscope input{width:100%; padding:12px; font-size:16px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.invkpis{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px}
+.invkpi{background:var(--bg); border-radius:12px; padding:10px; text-align:center}
+.invkpi b{display:block; font-size:20px; font-weight:900}
+.invkpi span{font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--mut); font-weight:800}
+.invscan{display:flex; gap:8px}
+.invscan input{flex:1; padding:14px; font-size:18px; font-weight:800; letter-spacing:.5px; border-radius:13px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.invrow2{display:flex; gap:8px; margin-top:10px; align-items:stretch}
+.stepper{display:flex; align-items:center; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--bg)}
+.stepper button{width:42px; font-size:22px; font-weight:800; color:var(--ink)}
+.stepper input{width:56px; text-align:center; border:0; border-left:1px solid var(--line); border-right:1px solid var(--line); background:var(--card); font-size:17px; font-weight:800; -moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.invtake{background:var(--card); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; margin-bottom:8px; display:flex; gap:10px; align-items:center}
+.invtake .m{flex:1; min-width:0}
+.invtake .nm{font-weight:700; font-size:14px; line-height:1.25; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.invtake .sb{font-size:11px; color:var(--mut); margin-top:2px}
+.invtake .qn{flex:0 0 auto; text-align:right; font-weight:900}
+.invtake .qn b{font-size:19px} .invtake .qn small{display:block; font-size:9.5px; color:var(--mut); font-weight:800}
+.pill{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px}
+.pill.ok{background:color-mix(in srgb,var(--ok) 16%,var(--card));color:var(--ok)}
+.pill.lo{background:color-mix(in srgb,var(--warn) 18%,var(--card));color:var(--warn)}
+.pill.ex{background:color-mix(in srgb,var(--danger) 14%,var(--card));color:var(--danger)}
+.invtabs{display:flex; background:var(--card); border-radius:12px; padding:4px; margin-bottom:12px; box-shadow:var(--shadow); position:sticky; top:0; z-index:2}
+.invtabs button{flex:1; padding:9px; border-radius:9px; font-weight:800; font-size:13px; color:var(--mut)}
+.invtabs button.on{background:var(--accent); color:var(--accent-ink)}
+.diffbtn{font-size:11px;font-weight:800;padding:6px 10px;border-radius:9px;background:var(--accent);color:var(--accent-ink)}
+.superitem{background:var(--card); border-radius:13px; box-shadow:var(--shadow); padding:12px; margin-bottom:10px}
+.prog{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:6px}
+.prog > i{display:block;height:100%;background:var(--accent);border-radius:99px}
 </style>
 </head>
 <body>
@@ -283,6 +329,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
   <main class="wrap">
     <div class="tools">
       <button class="btn primary" id="btnScan"><span class="em">📷</span> Escanear código</button>
+      <button class="btn inv hide" id="btnInv"><span class="em">📝</span> Tomar inventario</button>
     </div>
 
     <div class="search">
@@ -292,10 +339,10 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
     </div>
 
     <div class="filters" id="filters">
-      <div><label>Sublínea</label><select id="fSub"></select></div>
-      <div><label>Clase</label><select id="fClase"></select></div>
-      <div><label>Subclase</label><select id="fSubc"></select></div>
-      <div><label>Marca</label><select id="fMarca"></select></div>
+      <div><label>Sublínea</label><input id="fSub" list="dlSub" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlSub"></datalist></div>
+      <div><label>Clase</label><input id="fClase" list="dlClase" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlClase"></datalist></div>
+      <div><label>Subclase</label><input id="fSubc" list="dlSubc" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlSubc"></datalist></div>
+      <div><label>Marca</label><input id="fMarca" list="dlMarca" placeholder="Todas" autocomplete="off" enterkeyhint="search"><datalist id="dlMarca"></datalist></div>
       <div class="fclear"><button id="clrFilters" class="hide">Limpiar filtros ×</button></div>
     </div>
 
@@ -347,12 +394,70 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
   </div>
 </div>
 
+<!-- ================= TOMAR INVENTARIO ================= -->
+<div id="inv">
+  <div class="invhead">
+    <div class="t">Tomar inventario<small id="invWho"></small></div>
+    <button class="invx" id="invClose">×</button>
+  </div>
+  <div class="invbody">
+    <div class="invtabs">
+      <button data-it="take" class="on">Tomar</button>
+      <button data-it="diff">Diferencias</button>
+      <button data-it="super" id="invSuperTab" class="hide">Supervisor</button>
+    </div>
+
+    <div id="itTake">
+      <div class="invcard">
+        <h4>Alcance (qué vas a tomar)</h4>
+        <div class="invscope">
+          <input id="iSub" list="idlSub" placeholder="Todas las sublíneas" autocomplete="off">
+          <input id="iMarca" list="idlMarca" placeholder="Todas las marcas" autocomplete="off">
+          <input id="iClase" list="idlClase" placeholder="Todas las clases" autocomplete="off">
+          <input id="iSubc" list="idlSubc" placeholder="Todas las subclases" autocomplete="off">
+        </div>
+        <datalist id="idlSub"></datalist><datalist id="idlMarca"></datalist><datalist id="idlClase"></datalist><datalist id="idlSubc"></datalist>
+        <div class="invkpis">
+          <div class="invkpi"><b id="ikProd">0</b><span>Productos</span></div>
+          <div class="invkpi"><b id="ikTaken">0</b><span>Contados</span></div>
+          <div class="invkpi"><b id="ikFalta">0</b><span>Faltan</span></div>
+        </div>
+      </div>
+      <div class="invcard">
+        <h4>Escanear · escribir código o descripción</h4>
+        <div class="invscan">
+          <input id="iCode" autocomplete="off" placeholder="UPC/EAN, SKU o parte de la descripción" enterkeyhint="done">
+          <button class="btn primary" id="iAdd" style="flex:0 0 auto;padding:0 18px">Sumar</button>
+        </div>
+        <div class="invrow2">
+          <div class="stepper"><button id="iMinus">−</button><input id="iQty" type="number" value="1" min="1" inputmode="numeric"><button id="iPlus">+</button></div>
+          <button class="btn" id="iCam" style="flex:1">📷 Cámara</button>
+        </div>
+        <div id="iMatches"></div>
+      </div>
+      <div class="invcard">
+        <h4>Últimos tomados</h4>
+        <div id="iLast"><div style="color:var(--mut);font-size:13px">Aún no tomas nada.</div></div>
+      </div>
+      <button class="btn primary" id="iFinish" style="width:100%">🏁 Finalizar inventario</button>
+    </div>
+
+    <div id="itDiff" class="hide">
+      <div class="invcard"><h4>Diferencias (físico vs disponible)</h4><div id="iDiffBody"></div></div>
+    </div>
+
+    <div id="itSuper" class="hide">
+      <div id="iSuperList"><div style="color:var(--mut);font-size:13px">Cargando…</div></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
 /* ===== Claves de almacenamiento ===== */
-var K={DATA:'stk-data',META:'stk-meta',ACCENT:'stk-accent',THEME:'stk-theme',LOW:'stk-low',USERS:'stk-users',SESSION:'stk-session'};
+var K={DATA:'stk-data',META:'stk-meta',ACCENT:'stk-accent',THEME:'stk-theme',LOW:'stk-low',USERS:'stk-users',SESSION:'stk-session',INV:'stk-inv'};
 var ADMIN_KEY='connect2025';
 var PRODUCTS=[], META={fecha:null,archivo:null,filas:0};
 var FILT={q:'',linea:'',sub:'',clase:'',subc:'',marca:'',low:false};
@@ -527,6 +632,10 @@ var Cloud={
     out.sort(function(a,b){return (a.createdAt||'').localeCompare(b.createdAt||'');}); return out; },
   async approve(id){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),{estado:'aprobado'}); },
   async remove(id){ await this.fn.deleteDoc(this.fn.doc(this.db,'usuarios',id)); },
+  async setInv(id,val){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),{inv:!!val}); },
+  async saveInv(id,data){ await this.fn.setDoc(this.fn.doc(this.db,'inventarios',id),data,{merge:true}); },
+  async listInv(){ var out=[]; var snap=await this.fn.getDocs(this.fn.collection(this.db,'inventarios')); snap.forEach(function(d){ out.push(Object.assign({id:d.id},d.data())); }); out.sort(function(a,b){return (b.updatedMs||0)-(a.updatedMs||0);}); return out; },
+  async deleteInv(id){ await this.fn.deleteDoc(this.fn.doc(this.db,'inventarios',id)); },
   async saveCatalog(products,meta){
     var CH=500, parts=Math.ceil(products.length/CH)||0, prev=0;
     try{ var ms=await this.fn.getDoc(this.fn.doc(this.db,'catalogo','meta')); if(ms.exists()) prev=ms.data().parts||0; }catch(e){}
@@ -648,13 +757,24 @@ function passExcept(p,ex){
   if(ex!=='marca' && FILT.marca && normBrand(p.marca)!==FILT.marca) return false;
   return true;
 }
+function keyForCombo(id){ return {fSub:'sub',fClase:'clase',fSubc:'subc',fMarca:'marca'}[id]; }
+function fillCombo(inpId,dlId,items,cur,allLabel){
+  var inp=$(inpId), dl=$(dlId); if(!inp||!dl) return;
+  var map={}, rev={}, h='';
+  items.forEach(function(it){ var nm=it.name||it.code; map[up(nm)]=it.code; rev[it.code]=nm; h+='<option value="'+esc(nm)+'"></option>'; });
+  dl.innerHTML=h; inp.placeholder=allLabel; inp._map=map;
+  if(cur && !rev[cur]){ FILT[keyForCombo(inpId)]=''; cur=''; }
+  if(document.activeElement!==inp) inp.value = cur ? rev[cur] : '';
+}
+function resolveCombo(inpId){
+  var inp=$(inpId); var v=(inp.value||'').trim(); var k=keyForCombo(inpId);
+  FILT[k] = v ? (inp._map[up(v)]!=null ? inp._map[up(v)] : '') : '';
+}
 function buildFilters(){
-  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return passExcept(p,'sub');}),FILT.sub,'Todas las sublíneas');
-  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return passExcept(p,'clase');}),FILT.clase,'Todas las clases');
-  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return passExcept(p,'subc');}),FILT.subc,'Todas las subclases');
-  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return passExcept(p,'marca');}),FILT.marca,'Todas las marcas');
-  // Sincroniza FILT con lo que quedó seleccionado (si algo dejó de ser válido, se limpia)
-  FILT.sub=$('fSub').value; FILT.clase=$('fClase').value; FILT.subc=$('fSubc').value; FILT.marca=$('fMarca').value;
+  fillCombo('fSub','dlSub',distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return passExcept(p,'sub');}),FILT.sub,'Todas las sublíneas');
+  fillCombo('fClase','dlClase',distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return passExcept(p,'clase');}),FILT.clase,'Todas las clases');
+  fillCombo('fSubc','dlSubc',distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return passExcept(p,'subc');}),FILT.subc,'Todas las subclases');
+  fillCombo('fMarca','dlMarca',distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return passExcept(p,'marca');}),FILT.marca,'Todas las marcas');
   var active=[FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
   $('clrFilters').classList.toggle('hide',active===0);
 }
@@ -896,6 +1016,7 @@ async function populateUsers(){
   if(!users.length) h='<div style="color:var(--mut);font-size:13px">Aún no hay usuarios registrados.</div>';
   box.innerHTML=h;
   Array.prototype.forEach.call(box.querySelectorAll('[data-appr]'),function(b){b.onclick=function(){approveDispatch(b.getAttribute('data-appr'));};});
+  Array.prototype.forEach.call(box.querySelectorAll('[data-inv]'),function(b){b.onclick=function(){ invDispatch(b.getAttribute('data-inv'), b.getAttribute('data-on')!=='1'); };});
   Array.prototype.forEach.call(box.querySelectorAll('[data-del]'),function(b){b.onclick=function(){ if(confirm('¿Eliminar a este usuario?')) deleteDispatch(b.getAttribute('data-del')); };});
 }
 function userRowHTML(u,pending){
@@ -903,10 +1024,12 @@ function userRowHTML(u,pending){
   var ini=((u.nombre||'?')[0]||'?').toUpperCase();
   var fch=u.createdAt?new Date(u.createdAt).toLocaleDateString('es-CL'):'';
   return '<div class="userrow"><div class="uav">'+esc(ini)+'</div>'+
-    '<div class="uinfo"><div class="un">'+esc((u.nombre||'')+' '+(u.apellido||''))+' '+(pending?'<span class="tagp">Pendiente</span>':'<span class="taga">Aprobado</span>')+(u.rol==='admin'?' <span class="taga">Admin</span>':'')+'</div>'+
+    '<div class="uinfo"><div class="un">'+esc((u.nombre||'')+' '+(u.apellido||''))+' '+(pending?'<span class="tagp">Pendiente</span>':'<span class="taga">Aprobado</span>')+(u.rol==='admin'?' <span class="taga">Admin</span>':'')+(u.inv?' <span class="tagi">Inventario</span>':'')+'</div>'+
     '<div class="us">'+esc(u.username||'')+(fch?' · '+fch:'')+'</div></div>'+
-    '<div class="uacts">'+(pending?'<button class="minibtn bc" data-appr="'+esc(id)+'">✓ Aprobar</button>':'')+
-    '<button class="minibtn" data-del="'+esc(id)+'">✕</button></div></div>';
+    '<div class="uacts">'+
+      (pending?'<button class="minibtn bc" data-appr="'+esc(id)+'">✓ Aprobar</button>'
+             :'<button class="minibtn'+(u.inv?' inv':'')+'" data-inv="'+esc(id)+'" data-on="'+(u.inv?1:0)+'">'+(u.inv?'✓ Inventario':'+ Inventario')+'</button>')+
+      '<button class="minibtn" data-del="'+esc(id)+'">✕</button></div></div>';
 }
 async function approveDispatch(id){
   try{ if(CLOUD) await Cloud.approve(id); else { var us=getUsers(); var u=us.find(function(x){return x.username===id;}); if(u){u.estado='aprobado';saveUsers(us);} }
@@ -917,6 +1040,11 @@ async function deleteDispatch(id){
   try{ if(CLOUD) await Cloud.remove(id); else { var us=getUsers().filter(function(x){return x.username!==id;}); saveUsers(us); if(localStorage.getItem(K.SESSION)===id) logout(); }
     toast('Usuario eliminado'); populateUsers();
   }catch(e){ toast('No se pudo eliminar (¿permisos de administrador?)'); }
+}
+async function invDispatch(id,val){
+  try{ if(CLOUD) await Cloud.setInv(id,val); else { var us=getUsers(); var u=us.find(function(x){return x.username===id;}); if(u){u.inv=!!val;saveUsers(us);} }
+    toast(val?'Perfil inventario activado':'Perfil inventario quitado'); populateUsers();
+  }catch(e){ toast('No se pudo cambiar (¿permisos de administrador?)'); }
 }
 
 /* ===== Escáner ===== */
@@ -936,14 +1064,15 @@ async function zxingScan(){ try{ await loadScript('https://cdn.jsdelivr.net/npm/
   var reader=new ZXing.BrowserMultiFormatReader(); scanState.zxing=reader;
   reader.decodeFromVideoDevice(null,'video',function(result){ if(result)onScanResult(result.getText()); }); }catch(e){ $('scanStatus').textContent='Escribe el EAN manualmente abajo.'; } }
 function onScanResult(code){ if(!scanState.running&&$('scan').classList.contains('show')===false&&!code)return; code=(code||'').trim(); if(!code)return;
+  if(INV.scanRoute && INV.open){ closeScanner(); invAdd(code, +($('iQty').value||1)); return; }
   if(navigator.vibrate)navigator.vibrate(60); var p=findByEan(code); closeScanner();
   if(p){ openDetail(p.sku); } else { FILT.q=code; $('q').value=code; $('qclr').classList.remove('hide'); render(); toast('EAN '+esc(code)+' no está en el inventario cargado'); } }
-function closeScanner(){ scanState.running=false; cancelAnimationFrame(scanState.raf);
+function closeScanner(){ scanState.running=false; INV.scanRoute=false; cancelAnimationFrame(scanState.raf);
   try{ if(scanState.zxing){scanState.zxing.reset();scanState.zxing=null;} }catch(e){}
   if(scanState.stream){scanState.stream.getTracks().forEach(function(t){t.stop();});scanState.stream=null;} $('scan').classList.remove('show'); }
 
 /* ===== Gate / navegación ===== */
-function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; buildFilters(); render(); updateBanner(); }
+function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; $('btnInv').classList.toggle('hide', !canInv()); buildFilters(); render(); updateBanner(); }
 function showGate(){ $('app').hidden=true; $('gate').classList.remove('hide'); switchTab('login'); $('lgUser').value=''; $('lgPass').value=''; }
 function switchTab(which){
   var lg=which==='login';
@@ -954,6 +1083,158 @@ function authMsg(cls,txt){ $('authMsg').innerHTML='<div class="msg '+cls+'">'+tx
 
 /* ===== Acciones ===== */
 function pickFile(){ $('file2').click(); }
+
+/* ============================================================
+   TOMAR INVENTARIO
+   ============================================================ */
+var INV={open:false, scope:{sub:'',marca:'',clase:'',subc:''}, counts:{}, history:[], docId:'', name:'', status:'activo', startTs:0, pushT:null};
+function canInv(){ return !!(CURRENT && (CURRENT.admin || CURRENT.inv)); }
+function invUid(){ return (CURRENT && (CURRENT.uid||CURRENT.username)) || 'local'; }
+function invLoadLocal(){ try{ var s=JSON.parse(localStorage.getItem(K.INV)); if(s && s.docId) return s; }catch(e){} return null; }
+function invSaveLocal(){ try{ localStorage.setItem(K.INV, JSON.stringify({docId:INV.docId,name:INV.name,scope:INV.scope,counts:INV.counts,history:INV.history.slice(0,60),status:INV.status,startTs:INV.startTs})); }catch(e){} }
+function invReset(fresh){
+  INV.counts={}; INV.history=[]; INV.status='activo'; INV.scope={sub:'',marca:'',clase:'',subc:''};
+  INV.startTs=Date.now(); INV.docId=invUid()+'_'+INV.startTs;
+  INV.name=(CURRENT?((CURRENT.nombre||'')+' '+(CURRENT.apellido||'')).trim():'')||'Inventario';
+}
+function openInv(){
+  if(!canInv()){ toast('No tienes perfil de inventario'); return; }
+  var prev=invLoadLocal();
+  if(prev && prev.status!=='finalizado'){
+    INV.docId=prev.docId; INV.name=prev.name||''; INV.scope=prev.scope||{sub:'',marca:'',clase:'',subc:''};
+    INV.counts=prev.counts||{}; INV.history=prev.history||[]; INV.status=prev.status||'activo'; INV.startTs=prev.startTs||Date.now();
+  } else { invReset(true); }
+  INV.open=true; $('inv').classList.add('show');
+  $('invWho').textContent = ' · '+(INV.name||'');
+  $('invSuperTab').classList.toggle('hide', !isAdmin());
+  invSwitch('take'); invBuildScope(); renderInv();
+  setTimeout(function(){ $('iCode').focus(); },200);
+}
+function closeInv(){ INV.open=false; $('inv').classList.remove('show'); if(INV.scanRoute){ /*noop*/ } }
+function invSwitch(t){
+  ['take','diff','super'].forEach(function(x){ $('it'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hide',x!==t); });
+  Array.prototype.forEach.call(document.querySelectorAll('.invtabs button'),function(b){ b.classList.toggle('on', b.getAttribute('data-it')===t); });
+  if(t==='diff') renderInvDiff();
+  if(t==='super') loadInvSuper();
+}
+/* scope combos (reusa distinct/passExcept del catálogo global no aplica; usamos PRODUCTS directo) */
+function invPass(p,ex){
+  if(ex!=='sub' && INV.scope.sub && p.sub!==INV.scope.sub) return false;
+  if(ex!=='marca' && INV.scope.marca && normBrand(p.marca)!==INV.scope.marca) return false;
+  if(ex!=='clase' && INV.scope.clase && p.clase!==INV.scope.clase) return false;
+  if(ex!=='subc' && INV.scope.subc && p.subc!==INV.scope.subc) return false;
+  return true;
+}
+function invDistinct(getCode,getName,ex){ var seen={},out=[]; for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i]; if(!invPass(p,ex))continue; var c=getCode(p); if(!c)continue; if(!seen[c]){seen[c]=1;out.push({code:c,name:getName(p)});} } out.sort(function(a,b){return (a.name||'').localeCompare(b.name||'','es');}); return out; }
+function invFillCombo(inpId,dlId,items,cur){ var inp=$(inpId),dl=$(dlId); var map={},rev={},h=''; items.forEach(function(it){var nm=it.name||it.code; map[up(nm)]=it.code; rev[it.code]=nm; h+='<option value="'+esc(nm)+'"></option>';}); dl.innerHTML=h; inp._map=map; var k=invKey(inpId); if(cur&&!rev[cur]){INV.scope[k]='';cur='';} if(document.activeElement!==inp) inp.value=cur?rev[cur]:''; }
+function invKey(id){ return {iSub:'sub',iMarca:'marca',iClase:'clase',iSubc:'subc'}[id]; }
+function invBuildScope(){
+  invFillCombo('iSub','idlSub',invDistinct(function(p){return p.sub;},function(p){return p.subN;},'sub'),INV.scope.sub);
+  invFillCombo('iMarca','idlMarca',invDistinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},'marca'),INV.scope.marca);
+  invFillCombo('iClase','idlClase',invDistinct(function(p){return p.clase;},function(p){return p.claseN;},'clase'),INV.scope.clase);
+  invFillCombo('iSubc','idlSubc',invDistinct(function(p){return p.subc;},function(p){return p.subcN;},'subc'),INV.scope.subc);
+}
+function invScoped(){ return PRODUCTS.filter(function(p){ return invPass(p,''); }); }
+function beep(ok){ try{ var c=new (window.AudioContext||window.webkitAudioContext)(); var o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination); o.frequency.value=ok?880:200; g.gain.value=.07; o.start(); setTimeout(function(){o.stop();c.close();},ok?90:200);}catch(e){} }
+function invAdd(codeRaw,qty){
+  qty=qty||1; var code=(codeRaw||'').trim(); if(!code) return;
+  var p=findByEan(code) || findBySku(code);
+  if(!p){ beep(false); if(navigator.vibrate)navigator.vibrate([80,50,80]); toast('⛔ '+esc(code)+' no está en el archivo'); return; }
+  if(!invPass(p,'')){ beep(false); toast('Fuera del alcance elegido: '+esc(p.desc||p.sku)); return; }
+  INV.counts[p.sku]=(INV.counts[p.sku]||0)+qty;
+  INV.history.unshift({sku:p.sku,qty:qty,ts:Date.now()}); INV.history=INV.history.slice(0,60);
+  invSaveLocal(); invPush();
+  beep(true); if(navigator.vibrate)navigator.vibrate(40);
+  var fis=INV.counts[p.sku];
+  if(fis>p.stock) toast('⚠️ Excedente: '+esc(p.desc||p.sku)+' físico '+fis+' > disp '+p.stock);
+  renderInv();
+}
+function invStat(p){ var fis=INV.counts[p.sku]||0, dif=p.stock-fis, cls=fis===0?'lo':(fis>p.stock?'ex':(fis<p.stock?'lo':'ok')); return {fis:fis,dif:dif,cls:cls}; }
+function renderInv(){
+  var ps=invScoped();
+  $('ikProd').textContent=ps.length;
+  var taken=0,falta=0; ps.forEach(function(p){ var s=invStat(p); if(p.sku in INV.counts)taken++; if(s.fis<p.stock)falta+=(p.stock-s.fis); });
+  $('ikTaken').textContent=taken; $('ikFalta').textContent=falta;
+  // últimos tomados (5 distintos)
+  var seen={},items=[]; for(var i=0;i<INV.history.length;i++){ var h=INV.history[i]; if(seen[h.sku])continue; seen[h.sku]=1; items.push(h); if(items.length>=5)break; }
+  var box=$('iLast');
+  if(!items.length){ box.innerHTML='<div style="color:var(--mut);font-size:13px">Aún no tomas nada.</div>'; }
+  else{
+    box.innerHTML=items.map(function(h,idx){ var p=findBySku(h.sku); if(!p)return''; var s=invStat(p);
+      var pill=s.fis>p.stock?'<span class="pill ex">+'+(s.fis-p.stock)+'</span>':(s.fis<p.stock?'<span class="pill lo">faltan '+(p.stock-s.fis)+'</span>':'<span class="pill ok">OK</span>');
+      return '<div class="invtake"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div><div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' '+pill+'</div></div>'+
+        '<div class="qn"><b>'+s.fis+'</b><small>de '+p.stock+'</small></div></div>';
+    }).join('') + '<button class="btn ghost" id="iUndo" style="width:100%;margin-top:6px">↩ Deshacer último</button>';
+    $('iUndo').onclick=invUndo;
+  }
+}
+function invUndo(){ var h=INV.history.shift(); if(!h)return; INV.counts[h.sku]=Math.max(0,(INV.counts[h.sku]||0)-h.qty); if(INV.counts[h.sku]===0)delete INV.counts[h.sku]; invSaveLocal(); invPush(); renderInv(); }
+function invMatches(txt){
+  var box=$('iMatches'); var q=up(txt).trim();
+  if(q.length<2 || /^\d+$/.test(txt.trim())){ box.innerHTML=''; return; }
+  var ps=invScoped(), res=[];
+  for(var i=0;i<ps.length;i++){ var p=ps[i]; if(up(p.desc).indexOf(q)>=0||up(brandDisplay(p.marca)).indexOf(q)>=0||p.sku.indexOf(q)>=0){ res.push(p); if(res.length>=25)break; } }
+  if(!res.length){ box.innerHTML='<div style="color:var(--mut);font-size:12px;padding:6px 2px">Sin coincidencias.</div>'; return; }
+  box.innerHTML='<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">'+res.map(function(p){ var s=invStat(p);
+    return '<div class="invtake" style="padding:9px 11px"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div><div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' · disp '+p.stock+(s.fis?' · físico '+s.fis:'')+'</div></div>'+
+      '<button class="diffbtn" data-adds="'+esc(p.sku)+'">+ Sumar</button></div>'; }).join('')+'</div>';
+  Array.prototype.forEach.call(box.querySelectorAll('[data-adds]'),function(b){ b.onclick=function(){ invAdd(b.getAttribute('data-adds'), +($('iQty').value||1)); }; });
+}
+function renderInvDiff(){
+  var ps=invScoped().slice().sort(function(a,b){ return Math.abs(invStat(b).dif)-Math.abs(invStat(a).dif); });
+  var h='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Dif</th><th></th></tr></thead><tbody>';
+  ps.forEach(function(p){ var s=invStat(p); var dtxt=s.fis===p.stock?'0':(s.fis>p.stock?'+'+(s.fis-p.stock):String(p.stock-s.fis));
+    var col=s.fis===p.stock?'':(s.fis>p.stock?'color:var(--danger)':'color:var(--warn)');
+    h+='<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div></td>'+
+       '<td class="num">'+p.stock+'</td><td class="num">'+s.fis+'</td><td class="num" style="'+col+'">'+dtxt+'</td>'+
+       '<td>'+(s.dif!==0?'<button class="diffbtn" data-cuadra="'+esc(p.sku)+'">'+(s.dif>0?'+'+s.dif:String(s.dif))+'</button>':'✓')+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  var body=$('iDiffBody'); body.innerHTML=h;
+  Array.prototype.forEach.call(body.querySelectorAll('[data-cuadra]'),function(b){ b.onclick=function(){ var sku=b.getAttribute('data-cuadra'); var p=findBySku(sku); if(!p)return; var d=p.stock-(INV.counts[sku]||0); if(d===0)return; INV.counts[sku]=p.stock; INV.history.unshift({sku:sku,qty:d,ts:Date.now()}); invSaveLocal(); invPush(); renderInvDiff(); renderInv(); toast('Cuadrado: '+esc(p.desc||sku)); }; });
+}
+function invSummary(){ var ps=invScoped(),taken=0,falta=0,exc=0,units=0; ps.forEach(function(p){ var fis=INV.counts[p.sku]||0; if(p.sku in INV.counts)taken++; units+=fis; if(fis<p.stock)falta+=(p.stock-fis); if(fis>p.stock)exc+=(fis-p.stock); }); return {total:ps.length,taken:taken,falta:falta,exc:exc,units:units}; }
+function invPush(){
+  if(!CLOUD || !Cloud.db) return;
+  clearTimeout(INV.pushT); INV.pushT=setTimeout(function(){
+    var last=[]; var seen={}; for(var i=0;i<INV.history.length&&last.length<5;i++){ var h=INV.history[i]; if(seen[h.sku])continue; seen[h.sku]=1; var p=findBySku(h.sku); last.push({sku:h.sku,desc:p?(p.desc||h.sku):h.sku,fis:INV.counts[h.sku]||0,disp:p?p.stock:0}); }
+    var data={uid:invUid(), name:INV.name, scope:INV.scope, counts:INV.counts, summary:invSummary(), last:last, status:INV.status, updatedMs:Date.now()};
+    Cloud.saveInv(INV.docId,data).catch(function(){});
+  }, 2000);
+}
+function invFinish(){
+  if(!confirm('¿Finalizar el inventario? Se marcará como terminado (podrás verlo/descargarlo).')) return;
+  INV.status='finalizado'; invSaveLocal();
+  if(CLOUD&&Cloud.db){ var data={uid:invUid(),name:INV.name,scope:INV.scope,counts:INV.counts,summary:invSummary(),status:'finalizado',updatedMs:Date.now()}; Cloud.saveInv(INV.docId,data).catch(function(){}); }
+  toast('✓ Inventario finalizado');
+  invDownloadCSV(INV.counts, INV.name);
+  try{ localStorage.removeItem(K.INV); }catch(e){}
+}
+function invDownloadCSV(counts, name){
+  var rows=[['SUBLINEA','CLASE','SUBCLASE','MARCA','SKU','EAN','DESCRIPCION','DISPONIBLE','FISICO','DIFERENCIA']];
+  // solo productos con conteo o dentro del alcance
+  var ps=PRODUCTS.filter(function(p){ return (p.sku in counts) || invPass(p,''); });
+  ps.forEach(function(p){ var fis=counts[p.sku]||0; var pe=primaryEan(p);
+    rows.push([p.subN||p.sub,p.claseN||p.clase,p.subcN||p.subc,brandDisplay(p.marca),p.sku,(pe?pe.code:''),p.desc,p.stock,fis,(fis-p.stock)]); });
+  var csv=rows.map(function(r){return r.map(function(c){ c=String(c==null?'':c); return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(';');}).join('\r\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='inventario_'+(name||'toma').replace(/[^\w\-]+/g,'_')+'.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
+async function loadInvSuper(){
+  var el=$('iSuperList'); if(!isAdmin()){ el.innerHTML='<div style="color:var(--mut)">Solo el administrador.</div>'; return; }
+  if(!CLOUD){ el.innerHTML='<div style="color:var(--mut)">Disponible solo en modo nube.</div>'; return; }
+  el.innerHTML='<div style="color:var(--mut);font-size:13px">Cargando…</div>';
+  var rows; try{ rows=await Cloud.listInv(); }catch(e){ el.innerHTML='<div style="color:var(--danger)">No se pudo cargar.</div>'; return; }
+  if(!rows.length){ el.innerHTML='<div style="color:var(--mut);font-size:13px">Nadie ha tomado inventario aún.</div>'; return; }
+  el.innerHTML=rows.map(function(r,idx){ var s=r.summary||{}; var pct=s.total?Math.round((s.taken/s.total)*100):0; var fin=r.status==='finalizado';
+    return '<div class="superitem"><div style="display:flex;align-items:center;gap:8px"><b>'+esc(r.name||'—')+'</b>'+(fin?'<span class="taga">FINALIZADO</span>':'<span class="tagp">tomando…</span>')+'<span style="margin-left:auto;font-size:11px;color:var(--mut)">'+(r.updatedMs?new Date(r.updatedMs).toLocaleTimeString('es-CL'):'')+'</span></div>'+
+      '<div class="prog"><i style="width:'+pct+'%"></i></div>'+
+      '<div style="font-size:12px;color:var(--mut);margin-top:6px">'+(s.taken||0)+'/'+(s.total||0)+' ('+pct+'%) · faltan '+(s.falta||0)+' · exc '+(s.exc||0)+'</div>'+
+      '<div style="display:flex;gap:6px;margin-top:8px"><button class="diffbtn" data-dl="'+idx+'">⬇ CSV</button><button class="minibtn" data-del="'+idx+'">🗑 Eliminar</button></div></div>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('[data-dl]'),function(b){ b.onclick=function(){ invDownloadCSV(rows[+b.getAttribute('data-dl')].counts||{}, rows[+b.getAttribute('data-dl')].name); }; });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-del]'),function(b){ b.onclick=async function(){ var r=rows[+b.getAttribute('data-del')]; if(!confirm('¿Eliminar el inventario de '+(r.name||'')+'?'))return; try{ await Cloud.deleteInv(r.id); toast('Eliminado'); loadInvSuper(); }catch(e){ toast('No se pudo eliminar'); } }; });
+}
 
 /* ===== Init ===== */
 function init(){
@@ -985,6 +1266,21 @@ function init(){
   $('btnSet').onclick=openConfig;
   $('btnScan').onclick=openScanner;
   $('scanClose').onclick=closeScanner;
+  // Tomar inventario
+  $('btnInv').onclick=openInv;
+  $('invClose').onclick=closeInv;
+  Array.prototype.forEach.call(document.querySelectorAll('.invtabs button'),function(b){ b.onclick=function(){ invSwitch(b.getAttribute('data-it')); }; });
+  $('iAdd').onclick=function(){ var v=$('iCode').value.trim(); if(v){ invAdd(v,+($('iQty').value||1)); $('iCode').value=''; $('iMatches').innerHTML=''; $('iCode').focus(); } };
+  $('iCode').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); $('iAdd').click(); } });
+  $('iCode').addEventListener('input',function(){ invMatches(this.value); });
+  $('iMinus').onclick=function(){ $('iQty').value=Math.max(1,(+$('iQty').value||1)-1); };
+  $('iPlus').onclick=function(){ $('iQty').value=(+$('iQty').value||0)+1; };
+  $('iCam').onclick=function(){ INV.scanRoute=true; openScanner(); };
+  $('iFinish').onclick=invFinish;
+  ['iSub','iMarca','iClase','iSubc'].forEach(function(id){ var inp=$(id);
+    inp.addEventListener('change',function(){ var v=(inp.value||'').trim(); INV.scope[invKey(id)]= v?(inp._map[up(v)]!=null?inp._map[up(v)]:''):''; invBuildScope(); renderInv(); });
+    inp.addEventListener('input',function(){ if(!inp.value.trim()){ INV.scope[invKey(id)]=''; invBuildScope(); renderInv(); } });
+  });
   $('manualGo').onclick=function(){ var v=$('manualEan').value.trim(); if(v)onScanResult(v); };
   $('manualEan').addEventListener('keydown',function(e){ if(e.key==='Enter'){var v=this.value.trim();if(v)onScanResult(v);} });
 
@@ -996,10 +1292,11 @@ function init(){
   $('btnTable').onclick=openTable;
   $('tvClose').onclick=function(){ $('tableView').classList.remove('show'); };
   $('tvCopy').onclick=copyTable;
-  $('fSub').onchange=function(){ FILT.sub=this.value; buildFilters(); render(); };
-  $('fClase').onchange=function(){ FILT.clase=this.value; buildFilters(); render(); };
-  $('fSubc').onchange=function(){ FILT.subc=this.value; buildFilters(); render(); };
-  $('fMarca').onchange=function(){ FILT.marca=this.value; buildFilters(); render(); };
+  ['fSub','fClase','fSubc','fMarca'].forEach(function(id){
+    var inp=$(id);
+    inp.addEventListener('change',function(){ resolveCombo(id); buildFilters(); render(); });
+    inp.addEventListener('input',function(){ if(!inp.value.trim()){ FILT[keyForCombo(id)]=''; buildFilters(); render(); } });
+  });
 
   // Overlays
   $('sheetBg').onclick=function(){closeSheet('sheet');};
