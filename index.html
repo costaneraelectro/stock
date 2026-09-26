@@ -273,6 +273,14 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .invtabs button{flex:1; padding:9px; border-radius:9px; font-weight:800; font-size:13px; color:var(--mut)}
 .invtabs button.on{background:var(--accent); color:var(--accent-ink)}
 .diffbtn{font-size:11px;font-weight:800;padding:6px 10px;border-radius:9px;background:var(--accent);color:var(--accent-ink)}
+.dchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.dchip{font-size:12px;font-weight:800;padding:7px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--mut)}
+.dchip.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.dsel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.dsel select{padding:9px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:13px}
+.drow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.drow label{font-size:12px;font-weight:700}
+.drow input{padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .superitem{background:var(--card); border-radius:13px; box-shadow:var(--shadow); padding:12px; margin-bottom:10px}
 .prog{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:6px}
 .prog > i{display:block;height:100%;background:var(--accent);border-radius:99px}
@@ -1196,21 +1204,68 @@ function invMatches(txt){
   if(!res.length){ box.innerHTML='<div style="color:var(--mut);font-size:12px;padding:6px 2px">Sin coincidencias.</div>'; return; }
   box.innerHTML='<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">'+res.map(function(p){ var s=invStat(p);
     return '<div class="invtake" style="padding:9px 11px"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div><div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' · disp '+p.stock+(s.fis?' · físico '+s.fis:'')+'</div></div>'+
+      '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="flex:0 0 auto">🖼️</button>'+
       '<button class="diffbtn" data-adds="'+esc(p.sku)+'">+ Sumar</button></div>'; }).join('')+'</div>';
   Array.prototype.forEach.call(box.querySelectorAll('[data-adds]'),function(b){ b.onclick=function(){ invAdd(b.getAttribute('data-adds'), +($('iQty').value||1)); }; });
+  Array.prototype.forEach.call(box.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
+}
+var invDiff={filter:'all',marca:'',clase:'',subc:'',min:0};
+function invDiffList(){
+  var ps=invScoped().filter(function(p){
+    if(invDiff.marca && normBrand(p.marca)!==invDiff.marca) return false;
+    if(invDiff.clase && p.clase!==invDiff.clase) return false;
+    if(invDiff.subc && p.subc!==invDiff.subc) return false;
+    var s=invStat(p), dif=s.fis-p.stock, has=(p.sku in INV.counts);
+    if(invDiff.filter==='difs' && s.fis===p.stock) return false;
+    if(invDiff.filter==='falta' && !(s.fis<p.stock)) return false;
+    if(invDiff.filter==='exc' && !(s.fis>p.stock)) return false;
+    if(invDiff.filter==='sin' && has) return false;
+    if(invDiff.min>0 && Math.abs(dif)<invDiff.min) return false;
+    return true;
+  });
+  ps.sort(function(a,b){ return Math.abs(invStat(b).dif)-Math.abs(invStat(a).dif); });
+  return ps;
 }
 function renderInvDiff(){
-  var ps=invScoped().slice().sort(function(a,b){ return Math.abs(invStat(b).dif)-Math.abs(invStat(a).dif); });
-  var h='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Dif</th><th></th></tr></thead><tbody>';
+  var ps=invDiffList();
+  var chips=[['all','Todos'],['difs','Con diferencia'],['falta','Faltantes'],['exc','Excedentes'],['sin','Sin contar']];
+  var opt=function(list,cur){ return '<option value="">Todas</option>'+list.map(function(x){return '<option value="'+esc(x.k)+'"'+(x.k===cur?' selected':'')+'>'+esc(x.d)+'</option>';}).join(''); };
+  var sc=invScoped();
+  var marcas=[]; var seenm={}; sc.forEach(function(p){var k=normBrand(p.marca); if(k&&!seenm[k]){seenm[k]=1;marcas.push({k:k,d:brandDisplay(p.marca)});}}); marcas.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
+  var clases=[]; var seenc={}; sc.forEach(function(p){if(p.clase&&!seenc[p.clase]){seenc[p.clase]=1;clases.push({k:p.clase,d:p.claseN||p.clase});}}); clases.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
+  var subcs=[]; var seens={}; sc.forEach(function(p){if(p.subc&&(!invDiff.clase||p.clase===invDiff.clase)&&!seens[p.subc]){seens[p.subc]=1;subcs.push({k:p.subc,d:p.subcN||p.subc});}}); subcs.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
+  var h='';
+  h+='<div class="dchips">'+chips.map(function(c){return '<button class="dchip'+(invDiff.filter===c[0]?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('')+'</div>';
+  h+='<div class="dsel"><select id="dMarca">'+opt(marcas,invDiff.marca)+'</select><select id="dClase">'+opt(clases,invDiff.clase)+'</select><select id="dSubc">'+opt(subcs,invDiff.subc)+'</select></div>';
+  h+='<div class="drow"><label>Diferencia ≥ <input id="dMin" type="number" min="0" value="'+invDiff.min+'" inputmode="numeric" style="width:70px"></label><span style="color:var(--mut);font-size:11px">unidades (+ o −)</span><button class="diffbtn" id="dExp" style="margin-left:auto">⬇ Exportar diferencias</button></div>';
+  h+='<div style="font-size:12px;color:var(--mut);margin:6px 2px">'+ps.length+' productos</div>';
+  h+='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Dif</th><th></th></tr></thead><tbody>';
   ps.forEach(function(p){ var s=invStat(p); var dtxt=s.fis===p.stock?'0':(s.fis>p.stock?'+'+(s.fis-p.stock):String(p.stock-s.fis));
     var col=s.fis===p.stock?'':(s.fis>p.stock?'color:var(--danger)':'color:var(--warn)');
-    h+='<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div></td>'+
+    h+='<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div>'+
+       '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="margin-top:4px">🖼️ ver</button></td>'+
        '<td class="num">'+p.stock+'</td><td class="num">'+s.fis+'</td><td class="num" style="'+col+'">'+dtxt+'</td>'+
-       '<td>'+(s.dif!==0?'<button class="diffbtn" data-cuadra="'+esc(p.sku)+'">'+(s.dif>0?'+'+s.dif:String(s.dif))+'</button>':'✓')+'</td></tr>';
+       '<td>'+(s.dif!==0?'<button class="diffbtn" data-cuadra="'+esc(p.sku)+'">'+(s.dif>0?'+'+s.dif:String(s.dif))+' cuadrar</button>':'✓')+'</td></tr>';
   });
   h+='</tbody></table></div>';
   var body=$('iDiffBody'); body.innerHTML=h;
+  Array.prototype.forEach.call(body.querySelectorAll('.dchip'),function(b){ b.onclick=function(){ invDiff.filter=b.getAttribute('data-f'); renderInvDiff(); }; });
+  $('dMarca').onchange=function(){ invDiff.marca=this.value; renderInvDiff(); };
+  $('dClase').onchange=function(){ invDiff.clase=this.value; invDiff.subc=''; renderInvDiff(); };
+  $('dSubc').onchange=function(){ invDiff.subc=this.value; renderInvDiff(); };
+  $('dMin').onchange=function(){ invDiff.min=Math.max(0,+this.value||0); renderInvDiff(); };
+  $('dExp').onclick=function(){ exportDiffCSV(ps); };
+  Array.prototype.forEach.call(body.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
   Array.prototype.forEach.call(body.querySelectorAll('[data-cuadra]'),function(b){ b.onclick=function(){ var sku=b.getAttribute('data-cuadra'); var p=findBySku(sku); if(!p)return; var d=p.stock-(INV.counts[sku]||0); if(d===0)return; INV.counts[sku]=p.stock; INV.history.unshift({sku:sku,qty:d,ts:Date.now()}); invSaveLocal(); invPush(); renderInvDiff(); renderInv(); toast('Cuadrado: '+esc(p.desc||sku)); }; });
+}
+function exportDiffCSV(ps){
+  var rows=[['SUBLINEA','CLASE','SUBCLASE','MARCA','SKU','EAN','DESCRIPCION','DISPONIBLE','FISICO','DIFERENCIA']];
+  ps.forEach(function(p){ var fis=INV.counts[p.sku]||0; var pe=primaryEan(p);
+    rows.push([p.subN||p.sub,p.claseN||p.clase,p.subcN||p.subc,brandDisplay(p.marca),p.sku,(pe?pe.code:''),p.desc,p.stock,fis,(fis-p.stock)]); });
+  var csv=rows.map(function(r){return r.map(function(c){ c=String(c==null?'':c); return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(';');}).join('\r\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='diferencias_'+(INV.name||'toma').replace(/[^\w\-]+/g,'_')+'.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  toast('Diferencias exportadas ('+ps.length+' productos)');
 }
 function invSummary(){ var ps=invScoped(),taken=0,falta=0,exc=0,units=0; ps.forEach(function(p){ var fis=INV.counts[p.sku]||0; if(p.sku in INV.counts)taken++; units+=fis; if(fis<p.stock)falta+=(p.stock-fis); if(fis>p.stock)exc+=(fis-p.stock); }); return {total:ps.length,taken:taken,falta:falta,exc:exc,units:units}; }
 function invPush(){
