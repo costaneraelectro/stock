@@ -28,5 +28,13 @@ service cloud.firestore {
       allow read:  if estoyAprobado() || esAdmin();   // usuarios aprobados y el administrador pueden consultar
       allow write: if esAdmin();                       // solo el administrador sube/borra stock
     }
+
+    // Inventarios (tomas). El admin ve/edita/elimina todo; cada usuario aprobado, lo suyo.
+    match /inventarios/{doc} {
+      allow read:   if esAdmin() || (estoyAprobado() && resource.data.uid == request.auth.uid);
+      allow create: if (esAdmin() || estoyAprobado()) && request.resource.data.uid == request.auth.uid;
+      allow update: if esAdmin() || (estoyAprobado() && resource.data.uid == request.auth.uid);
+      allow delete: if esAdmin();
+    }
   }
 }
