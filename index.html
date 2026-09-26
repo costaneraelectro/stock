@@ -431,6 +431,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
     <div class="invtabs">
       <button data-it="take" class="on">Tomar</button>
       <button data-it="diff">Diferencias</button>
+      <button data-it="nf">Sobrantes</button>
       <button data-it="super" id="invSuperTab" class="hide">Supervisor</button>
     </div>
 
@@ -472,6 +473,13 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 
     <div id="itDiff" class="hide">
       <div class="invcard"><h4>Diferencias (físico vs disponible)</h4><div id="iDiffBody"></div></div>
+    </div>
+
+    <div id="itNf" class="hide">
+      <div class="invcard"><h4>Sobrantes</h4>
+        <p style="color:var(--mut);font-size:12px;margin:0 0 10px">Códigos escaneados que NO están en el archivo, y productos con físico por sobre lo disponible.</p>
+        <div id="iNfBody"></div>
+      </div>
     </div>
 
     <div id="itSuper" class="hide">
@@ -1130,13 +1138,13 @@ function pickFile(){ $('file2').click(); }
 /* ============================================================
    TOMAR INVENTARIO
    ============================================================ */
-var INV={open:false, scope:{sub:'',marca:'',clase:'',subc:''}, counts:{}, history:[], docId:'', name:'', status:'activo', startTs:0, pushT:null};
+var INV={open:false, scope:{sub:'',marca:'',clase:'',subc:''}, counts:{}, history:[], notFound:[], docId:'', name:'', status:'activo', startTs:0, pushT:null};
 function canInv(){ return !!(CURRENT && (CURRENT.admin || CURRENT.inv)); }
 function invUid(){ return (CURRENT && (CURRENT.uid||CURRENT.username)) || 'local'; }
 function invLoadLocal(){ try{ var s=JSON.parse(localStorage.getItem(K.INV)); if(s && s.docId) return s; }catch(e){} return null; }
-function invSaveLocal(){ try{ localStorage.setItem(K.INV, JSON.stringify({docId:INV.docId,name:INV.name,scope:INV.scope,counts:INV.counts,history:INV.history.slice(0,60),status:INV.status,startTs:INV.startTs})); }catch(e){} }
+function invSaveLocal(){ try{ localStorage.setItem(K.INV, JSON.stringify({docId:INV.docId,name:INV.name,scope:INV.scope,counts:INV.counts,history:INV.history.slice(0,60),notFound:INV.notFound.slice(0,200),status:INV.status,startTs:INV.startTs})); }catch(e){} }
 function invReset(fresh){
-  INV.counts={}; INV.history=[]; INV.status='activo'; INV.scope={sub:'',marca:'',clase:'',subc:''};
+  INV.counts={}; INV.history=[]; INV.notFound=[]; INV.status='activo'; INV.scope={sub:'',marca:'',clase:'',subc:''};
   INV.startTs=Date.now(); INV.docId=invUid()+'_'+INV.startTs;
   INV.name=(CURRENT?((CURRENT.nombre||'')+' '+(CURRENT.apellido||'')).trim():'')||'Inventario';
 }
@@ -1145,7 +1153,7 @@ function openInv(){
   var prev=invLoadLocal();
   if(prev && prev.status!=='finalizado'){
     INV.docId=prev.docId; INV.name=prev.name||''; INV.scope=prev.scope||{sub:'',marca:'',clase:'',subc:''};
-    INV.counts=prev.counts||{}; INV.history=prev.history||[]; INV.status=prev.status||'activo'; INV.startTs=prev.startTs||Date.now();
+    INV.counts=prev.counts||{}; INV.history=prev.history||[]; INV.notFound=prev.notFound||[]; INV.status=prev.status||'activo'; INV.startTs=prev.startTs||Date.now();
   } else { invReset(true); }
   INV.open=true; $('inv').classList.add('show');
   $('invWho').textContent = ' · '+(INV.name||'');
@@ -1155,10 +1163,11 @@ function openInv(){
 }
 function closeInv(){ INV.open=false; $('inv').classList.remove('show'); stopSuper(); }
 function invSwitch(t){
-  ['take','diff','super'].forEach(function(x){ $('it'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hide',x!==t); });
+  ['take','diff','nf','super'].forEach(function(x){ $('it'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hide',x!==t); });
   Array.prototype.forEach.call(document.querySelectorAll('.invtabs button'),function(b){ b.classList.toggle('on', b.getAttribute('data-it')===t); });
   if(t!=='super') stopSuper();
   if(t==='diff') renderInvDiff();
+  if(t==='nf') renderInvNf();
   if(t==='super') loadInvSuper();
 }
 /* scope combos (reusa distinct/passExcept del catálogo global no aplica; usamos PRODUCTS directo) */
@@ -1185,7 +1194,10 @@ function invPasteOpen(){ if(!canInv())return; var t=prompt('Pega una lista de c�
 function invAdd(codeRaw,qty){
   qty=qty||1; var code=(codeRaw||'').trim(); if(!code) return;
   var p=findByEan(code) || findBySku(code);
-  if(!p){ beepUnknown(); if(navigator.vibrate)navigator.vibrate([90,60,90,60,120]); toast('⛔ Código NO reconocido: '+esc(code)); return; }
+  if(!p){ beepUnknown(); if(navigator.vibrate)navigator.vibrate([90,60,90,60,120]);
+    var ex=null; for(var n=0;n<INV.notFound.length;n++){ if(INV.notFound[n].code===code){ex=INV.notFound[n];break;} }
+    if(ex){ ex.qty+=qty; } else { INV.notFound.unshift({code:code,qty:qty,ts:Date.now()}); }
+    invSaveLocal(); toast('⛔ NO reconocido: '+esc(code)+' · guardado en Sobrantes'); return; }
   if(!invPass(p,'')){ beep(false); toast('Fuera del alcance elegido: '+esc(p.desc||p.sku)); return; }
   INV.counts[p.sku]=(INV.counts[p.sku]||0)+qty;
   INV.history.unshift({sku:p.sku,qty:qty,ts:Date.now()}); INV.history=INV.history.slice(0,60);
@@ -1228,12 +1240,16 @@ function invMatches(txt){
   Array.prototype.forEach.call(box.querySelectorAll('[data-adds]'),function(b){ b.onclick=function(){ invAdd(b.getAttribute('data-adds'), +($('iQty').value||1)); }; });
   Array.prototype.forEach.call(box.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
 }
-var invDiff={filter:'all',marca:'',clase:'',subc:'',min:0};
+var invDiff={filter:'all',marca:'',clase:'',subc:'',min:0,q:''};
 function invDiffList(){
+  var q=up(invDiff.q||'').trim(), qd=q.replace(/\D/g,'');
   var ps=invScoped().filter(function(p){
     if(invDiff.marca && normBrand(p.marca)!==invDiff.marca) return false;
     if(invDiff.clase && p.clase!==invDiff.clase) return false;
     if(invDiff.subc && p.subc!==invDiff.subc) return false;
+    if(q){ var hit=up(p.desc).indexOf(q)>=0||up(brandDisplay(p.marca)).indexOf(q)>=0||p.sku.indexOf(q)>=0;
+      if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||eanObjs(p).some(function(e){return e.code.indexOf(qd)>=0;}); }
+      if(!hit) return false; }
     var s=invStat(p), dif=s.fis-p.stock, has=(p.sku in INV.counts);
     if(invDiff.filter==='difs' && s.fis===p.stock) return false;
     if(invDiff.filter==='falta' && !(s.fis<p.stock)) return false;
@@ -1254,6 +1270,7 @@ function renderInvDiff(){
   var clases=[]; var seenc={}; sc.forEach(function(p){if(p.clase&&!seenc[p.clase]){seenc[p.clase]=1;clases.push({k:p.clase,d:p.claseN||p.clase});}}); clases.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
   var subcs=[]; var seens={}; sc.forEach(function(p){if(p.subc&&(!invDiff.clase||p.clase===invDiff.clase)&&!seens[p.subc]){seens[p.subc]=1;subcs.push({k:p.subc,d:p.subcN||p.subc});}}); subcs.sort(function(a,b){return a.d.localeCompare(b.d,'es');});
   var h='';
+  h+='<div style="margin-bottom:8px"><input id="dSearch" placeholder="🔍 Buscar producto (descripción, SKU o EAN)" autocomplete="off" value="'+esc(invDiff.q)+'" style="width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></div>';
   h+='<div class="dchips">'+chips.map(function(c){return '<button class="dchip'+(invDiff.filter===c[0]?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('')+'</div>';
   h+='<div class="dsel"><select id="dMarca">'+opt(marcas,invDiff.marca)+'</select><select id="dClase">'+opt(clases,invDiff.clase)+'</select><select id="dSubc">'+opt(subcs,invDiff.subc)+'</select></div>';
   h+='<div class="drow"><label>Diferencia ≥ <input id="dMin" type="number" min="0" value="'+invDiff.min+'" inputmode="numeric" style="width:70px"></label><span style="color:var(--mut);font-size:11px">unidades (+ o −)</span><button class="diffbtn" id="dExp" style="margin-left:auto">⬇ Exportar diferencias</button></div>';
@@ -1268,6 +1285,7 @@ function renderInvDiff(){
   });
   h+='</tbody></table></div>';
   var body=$('iDiffBody'); body.innerHTML=h;
+  var ds=$('dSearch'); if(ds){ ds.oninput=function(){ invDiff.q=this.value; renderInvDiff(); var e=$('dSearch'); if(e){ e.focus(); var v=e.value; e.value=''; e.value=v; } }; }
   Array.prototype.forEach.call(body.querySelectorAll('.dchip'),function(b){ b.onclick=function(){ invDiff.filter=b.getAttribute('data-f'); renderInvDiff(); }; });
   $('dMarca').onchange=function(){ invDiff.marca=this.value; renderInvDiff(); };
   $('dClase').onchange=function(){ invDiff.clase=this.value; invDiff.subc=''; renderInvDiff(); };
@@ -1285,6 +1303,35 @@ function exportDiffCSV(ps){
   var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='diferencias_'+(INV.name||'toma').replace(/[^\w\-]+/g,'_')+'.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
   toast('Diferencias exportadas ('+ps.length+' productos)');
+}
+function renderInvNf(){
+  var body=$('iNfBody');
+  var exc=invScoped().filter(function(p){ return (INV.counts[p.sku]||0)>p.stock; }).sort(function(a,b){ return (invStat(b).fis-b.stock)-(invStat(a).fis-a.stock); });
+  var h='';
+  // Códigos no reconocidos
+  h+='<div style="font-size:11px;font-weight:800;color:var(--warn);margin:0 0 6px">CÓDIGOS NO RECONOCIDOS ('+INV.notFound.length+')</div>';
+  if(!INV.notFound.length){ h+='<div style="color:var(--mut);font-size:13px;margin-bottom:6px">Ninguno.</div>'; }
+  else{ h+='<div class="eanlist">'+INV.notFound.map(function(r,i){
+      return '<div class="eanrow"><div><div class="code">'+esc(r.code)+'</div><div class="lab">x'+r.qty+' · '+new Date(r.ts).toLocaleTimeString('es-CL')+'</div></div>'+
+        '<div class="eanacts"><button class="minibtn bc" data-bc="'+esc(r.code)+'">▐║▐</button><button class="minibtn" data-nfdel="'+i+'">🗑</button></div></div>'; }).join('')+'</div>';
+    h+='<button class="btn ghost" id="nfExp" style="width:100%;margin-top:8px">⬇ Exportar sobrantes</button>'; }
+  // Excedentes (físico > disponible)
+  h+='<div style="font-size:11px;font-weight:800;color:var(--danger);margin:16px 0 6px">EXCEDENTES · físico &gt; disponible ('+exc.length+')</div>';
+  if(!exc.length){ h+='<div style="color:var(--mut);font-size:13px">Ninguno.</div>'; }
+  else{ h+='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Exc</th><th></th></tr></thead><tbody>'+
+    exc.map(function(p){ var s=invStat(p);
+      return '<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div></td>'+
+        '<td class="num">'+p.stock+'</td><td class="num">'+s.fis+'</td><td class="num" style="color:var(--danger)">+'+(s.fis-p.stock)+'</td>'+
+        '<td><button class="diffbtn" data-cuadra="'+esc(p.sku)+'">cuadrar</button></td></tr>'; }).join('')+'</tbody></table></div>'; }
+  body.innerHTML=h;
+  Array.prototype.forEach.call(body.querySelectorAll('[data-nfdel]'),function(b){ b.onclick=function(){ INV.notFound.splice(+b.getAttribute('data-nfdel'),1); invSaveLocal(); renderInvNf(); }; });
+  Array.prototype.forEach.call(body.querySelectorAll('[data-bc]'),function(b){ b.onclick=function(){ showBarcode(b.getAttribute('data-bc')); }; });
+  Array.prototype.forEach.call(body.querySelectorAll('[data-cuadra]'),function(b){ b.onclick=function(){ var sku=b.getAttribute('data-cuadra'); var p=findBySku(sku); if(!p)return; INV.counts[sku]=p.stock; INV.history.unshift({sku:sku,qty:0,ts:Date.now()}); invSaveLocal(); invPush(); renderInvNf(); renderInv(); toast('Cuadrado: '+esc(p.desc||sku)); }; });
+  var ex2=$('nfExp'); if(ex2) ex2.onclick=function(){
+    var rows=[['CODIGO','CANTIDAD','HORA']]; INV.notFound.forEach(function(r){ rows.push([r.code,r.qty,new Date(r.ts).toLocaleString('es-CL')]); });
+    var csv=rows.map(function(r){return r.map(function(c){c=String(c==null?'':c);return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(';');}).join('\r\n');
+    var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sobrantes_'+(INV.name||'toma').replace(/[^\w\-]+/g,'_')+'.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  };
 }
 function invSummary(){ var ps=invScoped(),taken=0,falta=0,exc=0,units=0; ps.forEach(function(p){ var fis=INV.counts[p.sku]||0; if(p.sku in INV.counts)taken++; units+=fis; if(fis<p.stock)falta+=(p.stock-fis); if(fis>p.stock)exc+=(fis-p.stock); }); return {total:ps.length,taken:taken,falta:falta,exc:exc,units:units}; }
 function invPush(){
