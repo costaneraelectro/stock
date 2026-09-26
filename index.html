@@ -303,6 +303,9 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .drow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
 .drow label{font-size:12px;font-weight:700}
 .drow input{padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.histrow{display:flex; align-items:center; gap:6px; padding:9px 0; border-bottom:1px solid var(--line)}
+.histrow:last-child{border:0}
+.histrow.on{background:color-mix(in srgb,var(--accent) 10%,transparent); border-radius:10px; padding:9px 8px; border-bottom:0}
 .superitem{background:var(--card); border-radius:13px; box-shadow:var(--shadow); padding:12px; margin-bottom:10px}
 .prog{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:6px}
 .prog > i{display:block;height:100%;background:var(--accent);border-radius:99px}
@@ -439,6 +442,12 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
     </div>
 
     <div id="itTake">
+      <div class="invcard">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h4 style="margin:0;flex:1">Historial de inventarios</h4>
+          <button class="minibtn" id="iImport">⬆ Importar</button>
+          <button class="minibtn bc" id="iNew">+ Nuevo</button></div>
+        <div id="iHistList"><div style="color:var(--mut);font-size:13px">Sin inventarios aún.</div></div>
+      </div>
       <div class="invcard">
         <h4>Alcance (qué vas a tomar)</h4>
         <div class="invscope">
@@ -1145,26 +1154,69 @@ function pickFile(){ $('file2').click(); }
 var INV={open:false, started:false, scope:{sub:'',marca:'',clase:'',subc:''}, counts:{}, history:[], notFound:[], docId:'', name:'', status:'activo', startTs:0, pushT:null};
 function canInv(){ return !!(CURRENT && (CURRENT.admin || CURRENT.inv)); }
 function invUid(){ return (CURRENT && (CURRENT.uid||CURRENT.username)) || 'local'; }
-function invLoadLocal(){ try{ var s=JSON.parse(localStorage.getItem(K.INV)); if(s && s.docId) return s; }catch(e){} return null; }
-function invSaveLocal(){ try{ localStorage.setItem(K.INV, JSON.stringify({docId:INV.docId,name:INV.name,scope:INV.scope,counts:INV.counts,history:INV.history.slice(0,60),notFound:INV.notFound.slice(0,200),status:INV.status,startTs:INV.startTs})); }catch(e){} }
-function invReset(fresh){
+/* ---- almacén multi-inventario ---- */
+var STORE={activeId:null, sessions:{}};
+function invStoreLoad(){ try{ var s=JSON.parse(localStorage.getItem(K.INV));
+  if(s && s.sessions){ STORE=s; return; }
+  if(s && s.docId){ STORE={activeId:s.docId, sessions:{}}; STORE.sessions[s.docId]=s; }   // migra formato antiguo
+}catch(e){} }
+function invStoreSave(){ try{ localStorage.setItem(K.INV, JSON.stringify(STORE)); }catch(e){ toast('Memoria llena: borra inventarios viejos.'); } }
+function invSnapshot(){ return {docId:INV.docId,name:INV.name,scope:INV.scope,counts:INV.counts,history:INV.history.slice(0,60),notFound:INV.notFound.slice(0,200),status:INV.status,startTs:INV.startTs,updatedAt:Date.now()}; }
+function invSaveLocal(){ if(!INV.docId) return; STORE.sessions[INV.docId]=invSnapshot(); STORE.activeId=INV.docId; invStoreSave(); }
+function invLoadInto(s){ INV.docId=s.docId; INV.name=s.name||'Inventario'; INV.scope=s.scope||{sub:'',marca:'',clase:'',subc:''};
+  INV.counts=s.counts||{}; INV.history=s.history||[]; INV.notFound=s.notFound||[]; INV.status=s.status||'activo'; INV.startTs=s.startTs||Date.now();
+  INV.started=Object.keys(INV.counts).length>0||(INV.notFound&&INV.notFound.length>0); }
+function invReset(){
   INV.counts={}; INV.history=[]; INV.notFound=[]; INV.status='activo'; INV.scope={sub:'',marca:'',clase:'',subc:''};
-  INV.startTs=Date.now(); INV.docId=invUid()+'_'+INV.startTs;
+  INV.startTs=Date.now(); INV.docId=invUid()+'_'+INV.startTs+'_'+Math.random().toString(36).slice(2,5);
   INV.name=(CURRENT?((CURRENT.nombre||'')+' '+(CURRENT.apellido||'')).trim():'')||'Inventario';
+  INV.started=false; invSaveLocal();
 }
+function invSessionsSorted(){ return Object.keys(STORE.sessions).map(function(k){return STORE.sessions[k];}).sort(function(a,b){return (b.updatedAt||0)-(a.updatedAt||0);}); }
+function invActivate(id){ var s=STORE.sessions[id]; if(!s)return; invLoadInto(s); STORE.activeId=id; invSaveLocal(); invBuildScope(); renderInv(); renderInvHist(); }
+function invNew(){ invReset(); invBuildScope(); renderInv(); renderInvHist(); invSwitch('take'); }
 function openInv(){
   if(!canInv()){ toast('No tienes perfil de inventario'); return; }
-  var prev=invLoadLocal();
-  if(prev && prev.status!=='finalizado'){
-    INV.docId=prev.docId; INV.name=prev.name||''; INV.scope=prev.scope||{sub:'',marca:'',clase:'',subc:''};
-    INV.counts=prev.counts||{}; INV.history=prev.history||[]; INV.notFound=prev.notFound||[]; INV.status=prev.status||'activo'; INV.startTs=prev.startTs||Date.now();
-  } else { invReset(true); }
-  INV.started = Object.keys(INV.counts).length>0 || (INV.notFound&&INV.notFound.length>0);
+  invStoreLoad();
+  var act = STORE.activeId && STORE.sessions[STORE.activeId];
+  if(act){ invLoadInto(act); }
+  else { var all=invSessionsSorted(); if(all.length){ invLoadInto(all[0]); STORE.activeId=all[0].docId; } else { invReset(); } }
   INV.open=true; $('inv').classList.add('show');
   $('invWho').textContent = ' · '+(INV.name||'');
   $('invSuperTab').classList.toggle('hide', !isAdmin());
-  invSwitch('take'); invBuildScope(); renderInv();
+  invSwitch('take'); invBuildScope(); renderInv(); renderInvHist();
   if(INV.started) setTimeout(function(){ var c=$('iCode'); if(c)c.focus(); },200);
+}
+function renderInvHist(){
+  var el=$('iHistList'); var all=invSessionsSorted();
+  if(!all.length){ el.innerHTML='<div style="color:var(--mut);font-size:13px">Sin inventarios aún. Toca <b>+ Nuevo</b> para empezar.</div>'; return; }
+  el.innerHTML=all.map(function(s){ var active=s.docId===INV.docId; var n=Object.keys(s.counts||{}).length; var fin=s.status==='finalizado';
+    return '<div class="histrow'+(active?' on':'')+'"><div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13.5px">'+esc(s.name||'—')+(active?' <span class="taga">activo</span>':'')+(fin?' <span class="tagp">finalizado</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:var(--mut)">'+n+' contados · '+(s.updatedAt?new Date(s.updatedAt).toLocaleString('es-CL'):'')+'</div></div>'+
+      (active?'':'<button class="minibtn bc" data-cont="'+esc(s.docId)+'">Continuar</button>')+
+      '<button class="minibtn" data-share="'+esc(s.docId)+'">🔗</button><button class="minibtn" data-ren="'+esc(s.docId)+'">✎</button><button class="minibtn" data-del="'+esc(s.docId)+'">🗑</button></div>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('[data-cont]'),function(b){ b.onclick=function(){ invActivate(b.getAttribute('data-cont')); toast('Continuando inventario'); }; });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-share]'),function(b){ b.onclick=function(){ invShare(b.getAttribute('data-share')); }; });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-ren]'),function(b){ b.onclick=function(){ var s=STORE.sessions[b.getAttribute('data-ren')]; if(!s)return; var nn=prompt('Nombre:', s.name||''); if(nn==null)return; s.name=nn.trim()||s.name; s.updatedAt=Date.now(); if(s.docId===INV.docId)INV.name=s.name; invStoreSave(); renderInvHist(); $('invWho').textContent=' · '+(INV.name||''); }; });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-del]'),function(b){ b.onclick=function(){ var id=b.getAttribute('data-del'); var s=STORE.sessions[id]; if(!confirm('¿Eliminar "'+((s&&s.name)||'')+'"?'))return; delete STORE.sessions[id]; if(INV.docId===id){ var all=invSessionsSorted(); if(all.length){invLoadInto(all[0]);STORE.activeId=all[0].docId;} else invReset(); invBuildScope(); renderInv(); } invStoreSave(); renderInvHist(); }; });
+}
+function invShare(id){
+  var s=STORE.sessions[id]; if(!s)return;
+  var blob=new Blob([JSON.stringify(s)],{type:'application/json'});
+  var file=new File([blob],'inventario_'+(s.name||'toma').replace(/[^\w\-]+/g,'_')+'.json',{type:'application/json'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file],title:s.name||'Inventario'}).catch(function(){}); return; }
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); toast('Archivo .json descargado para compartir');
+}
+function invImportFile(file){
+  var r=new FileReader();
+  r.onload=function(){ try{ var s=JSON.parse(r.result);
+    if(!s || (!s.counts && !s.scope)){ toast('Archivo no válido'); return; }
+    s.docId=(s.docId||'imp')+'_imp'+Date.now().toString(36); s.name=(s.name||'Importado')+' (importado)'; s.updatedAt=Date.now();
+    STORE.sessions[s.docId]=s; STORE.activeId=s.docId; invStoreSave(); invLoadInto(s); invBuildScope(); renderInv(); renderInvHist();
+    toast('Inventario importado: '+esc(s.name));
+  }catch(e){ toast('No se pudo leer el .json'); } };
+  r.readAsText(file);
 }
 function invStart(){ INV.started=true; renderInv(); setTimeout(function(){ var c=$('iCode'); if(c)c.focus(); },150); }
 function closeInv(){ INV.open=false; $('inv').classList.remove('show'); stopSuper(); }
@@ -1375,12 +1427,12 @@ function invPush(){
   }, 2000);
 }
 function invFinish(){
-  if(!confirm('¿Finalizar el inventario? Se marcará como terminado (podrás verlo/descargarlo).')) return;
+  if(!confirm('¿Finalizar el inventario? Se marcará como terminado (queda en el historial, puedes descargarlo o compartirlo).')) return;
   INV.status='finalizado'; invSaveLocal();
-  if(CLOUD&&Cloud.db){ var data={uid:invUid(),name:INV.name,scope:INV.scope,counts:INV.counts,summary:invSummary(),status:'finalizado',updatedMs:Date.now()}; Cloud.saveInv(INV.docId,data).catch(function(){}); }
+  if(CLOUD&&Cloud.db){ var data={uid:invUid(),name:INV.name,scope:INV.scope,counts:INV.counts,summary:invSummary(),status:'finalizado',updatedMs:Date.now()}; Cloud.saveInv(INV.docId,data).then(function(){INV.pushErr=false;}).catch(function(e){ toast('⚠️ No se pudo guardar en la nube: '+((e&&e.code)||'error')); }); }
   toast('✓ Inventario finalizado');
   invDownloadCSV(INV.counts, INV.name);
-  try{ localStorage.removeItem(K.INV); }catch(e){}
+  renderInvHist();
 }
 /* ---- CSV formato ORIGINAL (17 cols + STOCK FISICO), 1 fila por UPC, latin1, CRLF ---- */
 function cleanNum(v){ if(typeof v!=='number') v=parseNum(v); if(Number.isInteger(v)) return String(v); return String(Math.round(v*100)/100).replace('.',','); }
@@ -1511,6 +1563,10 @@ function init(){
   $('iCam').onclick=function(){ INV.scanRoute=true; openScanner(); };
   $('iPaste').onclick=invPasteOpen;
   $('iStart').onclick=invStart;
+  $('iNew').onclick=invNew;
+  var impInp=document.createElement('input'); impInp.type='file'; impInp.accept='.json,application/json'; impInp.style.display='none';
+  impInp.addEventListener('change',function(e){ if(e.target.files[0])invImportFile(e.target.files[0]); e.target.value=''; }); document.body.appendChild(impInp);
+  $('iImport').onclick=function(){ impInp.click(); };
   $('iFinish').onclick=invFinish;
   ['iSub','iMarca','iClase','iSubc'].forEach(function(id){ var inp=$(id);
     inp.addEventListener('change',function(){ var v=(inp.value||'').trim(); INV.scope[invKey(id)]= v?(inp._map[up(v)]!=null?inp._map[up(v)]:''):''; invBuildScope(); renderInv(); });
