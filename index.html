@@ -1314,6 +1314,7 @@ function invAdd(codeRaw,qty){
   beep(true); if(navigator.vibrate)navigator.vibrate(40);
   var fis=INV.counts[p.sku];
   if(fis>p.stock) toast('⚠️ Excedente: '+esc(p.desc||p.sku)+' físico '+fis+' > disp '+p.stock);
+  var q=$('iQty'); if(q) q.value=1;
   renderInv();
 }
 function invStat(p){ var fis=INV.counts[p.sku]||0, dif=p.stock-fis, cls=fis===0?'lo':(fis>p.stock?'ex':(fis<p.stock?'lo':'ok')); return {fis:fis,dif:dif,cls:cls}; }
