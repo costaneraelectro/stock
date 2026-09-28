@@ -158,7 +158,7 @@ header{position:sticky; top:0; z-index:30; background:linear-gradient(135deg,var
 .catpath b{color:var(--ink)}
 
 /* Image lightbox */
-.lightbox{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.9); display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px}
+.lightbox{position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.9); display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px}
 .lightbox.show{display:flex}
 .lightbox img{max-width:100%; max-height:76vh; border-radius:12px; background:#fff}
 .lightbox .lbclose{position:absolute; top:calc(env(safe-area-inset-top) + 12px); right:16px; width:42px; height:42px; border-radius:50%; background:rgba(255,255,255,.2); color:#fff; font-size:22px}
@@ -184,7 +184,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 #btnTable{margin-top:2px}
 
 /* Barcode modal */
-.bcwrap{position:fixed; inset:0; z-index:72; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; padding:24px}
+.bcwrap{position:fixed; inset:0; z-index:102; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; padding:24px}
 .bcwrap.show{display:flex}
 .bccard{background:#fff; border-radius:18px; padding:22px 20px 18px; text-align:center; max-width:360px; width:100%}
 .bccard svg{width:100%; height:auto}
@@ -258,6 +258,12 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 /* ===== Tomar inventario (overlay) ===== */
 #inv{position:fixed; inset:0; z-index:80; background:var(--bg); color:var(--ink); display:none; flex-direction:column}
 #inv.show{display:flex}
+#invSearch{position:fixed; inset:0; z-index:84; background:var(--bg); color:var(--ink); display:none; flex-direction:column}
+#invSearch.show{display:flex}
+#invSearch .isHead{display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow)}
+#invSearch .isHead input{flex:1; padding:11px 12px; border-radius:11px; border:0; font-size:15px; background:rgba(255,255,255,.92); color:#12151b}
+#invSearch .isClose{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.12);color:var(--accent-ink);font-size:22px;display:grid;place-items:center;flex:0 0 auto}
+#invSearch .isBody{flex:1; overflow:auto; padding:12px 14px calc(env(safe-area-inset-bottom) + 20px)}
 .invhead{display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow)}
 .invhead .t{font-weight:900; flex:1; font-size:17px; line-height:1.1}
 .invhead .t small{display:block; font-weight:700; font-size:11px; opacity:.8}
@@ -416,6 +422,15 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
   </div>
 </div>
 
+<!-- Búsqueda de productos (sumar a la toma) -->
+<div id="invSearch">
+  <div class="isHead">
+    <input id="isInput" autocomplete="off" placeholder="Buscar por marca, modelo o descripción" enterkeyhint="search">
+    <button class="isClose" id="isClose">×</button>
+  </div>
+  <div class="isBody"><div id="isResults"></div></div>
+</div>
+
 <!-- Scanner -->
 <div id="scan">
   <video id="video" playsinline muted></video>
@@ -473,6 +488,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
         <div class="invrow2">
           <div class="stepper"><button id="iMinus">−</button><input id="iQty" type="number" value="1" min="1" inputmode="numeric"><button id="iPlus">+</button></div>
           <button class="btn" id="iCam" style="flex:1">📷 Cámara</button>
+          <button class="btn" id="iSearch" style="flex:1">🔍 Buscar</button>
           <button class="btn" id="iPaste" style="flex:0 0 auto">📋</button>
         </div>
         <div id="iMatches"></div>
@@ -781,6 +797,8 @@ function parseData(txt){
 function eanObjs(p){ return (p.eans||[]).map(function(e){ return (typeof e==='string')?{code:e,stock:null}:e; }); }
 function primaryEan(p){ var es=eanObjs(p); if(!es.length) return null; var best=es[0];
   for(var i=1;i<es.length;i++){ if((es[i].stock||0)>(best.stock||0)) best=es[i]; } return best; }
+function eanCodes(p){ return eanObjs(p).map(function(e){ return e.code; }).filter(Boolean); }
+function eansText(p){ var cs=eanCodes(p); return cs.length?cs.join(' · '):'sin EAN'; }
 async function handleFile(file){
   if(!file) return; toast('<span class="spin"></span> Leyendo '+esc(file.name)+'…');
   try{ var txt=await readFile(file); var r=parseData(txt);
@@ -1317,10 +1335,14 @@ function renderInv(){
   else{
     box.innerHTML=items.map(function(h,idx){ var p=findBySku(h.sku); if(!p)return''; var s=invStat(p);
       var pill=s.fis>p.stock?'<span class="pill ex">+'+(s.fis-p.stock)+'</span>':(s.fis<p.stock?'<span class="pill lo">faltan '+(p.stock-s.fis)+'</span>':'<span class="pill ok">OK</span>');
-      return '<div class="invtake"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div><div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' '+pill+'</div></div>'+
+      return '<div class="invtake"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div>'+
+        '<div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' '+pill+'</div>'+
+        '<div class="sb" style="margin-top:2px">EAN: '+esc(eansText(p))+'</div></div>'+
+        '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="flex:0 0 auto;align-self:center">🖼️</button>'+
         '<div class="qn"><b>'+s.fis+'</b><small>de '+p.stock+'</small></div></div>';
     }).join('') + '<button class="btn ghost" id="iUndo" style="width:100%;margin-top:6px">↩ Deshacer último</button>';
     $('iUndo').onclick=invUndo;
+    Array.prototype.forEach.call(box.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
   }
 }
 function invUndo(){ var h=INV.history.shift(); if(!h)return; INV.counts[h.sku]=Math.max(0,(INV.counts[h.sku]||0)-h.qty); if(INV.counts[h.sku]===0)delete INV.counts[h.sku]; invSaveLocal(); invPush(); renderInv(); }
@@ -1331,12 +1353,43 @@ function invMatches(txt){
   for(var i=0;i<ps.length;i++){ var p=ps[i]; if(up(p.desc).indexOf(q)>=0||up(brandDisplay(p.marca)).indexOf(q)>=0||p.sku.indexOf(q)>=0){ res.push(p); if(res.length>=25)break; } }
   if(!res.length){ box.innerHTML='<div style="color:var(--mut);font-size:12px;padding:6px 2px">Sin coincidencias.</div>'; return; }
   box.innerHTML='<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">'+res.map(function(p){ var s=invStat(p);
-    return '<div class="invtake" style="padding:9px 11px"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div><div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' · disp '+p.stock+(s.fis?' · físico '+s.fis:'')+'</div></div>'+
+    return '<div class="invtake" style="padding:9px 11px"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div><div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' · disp '+p.stock+(s.fis?' · físico '+s.fis:'')+'</div>'+
+      '<div class="sb" style="margin-top:2px">EAN: '+esc(eansText(p))+'</div></div>'+
       '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="flex:0 0 auto">🖼️</button>'+
       '<button class="diffbtn" data-adds="'+esc(p.sku)+'">+ Sumar</button></div>'; }).join('')+'</div>';
   Array.prototype.forEach.call(box.querySelectorAll('[data-adds]'),function(b){ b.onclick=function(){ invAdd(b.getAttribute('data-adds'), +($('iQty').value||1)); }; });
   Array.prototype.forEach.call(box.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
 }
+// ===== Búsqueda de productos (pantalla completa, sumar a la toma) =====
+function invSearchOpen(){ $('invSearch').classList.add('show'); var i=$('isInput'); i.value=''; invSearchRender(''); setTimeout(function(){ i.focus(); },120); }
+function invSearchClose(){ $('invSearch').classList.remove('show'); }
+function invSearchRender(txt){
+  var box=$('isResults'); var q=up(txt||'').trim(), qd=(txt||'').replace(/\D/g,'');
+  if(q.length<2 && !qd){ box.innerHTML='<div style="color:var(--mut);font-size:13px;padding:8px 2px">Escribe marca, modelo o descripción para buscar.</div>'; return; }
+  var ps=invScoped(), res=[];
+  for(var i=0;i<ps.length;i++){ var p=ps[i];
+    var hit=(q.length>=2)&&(up(p.desc).indexOf(q)>=0||up(brandDisplay(p.marca)).indexOf(q)>=0||up(p.sku).indexOf(q)>=0);
+    if(!hit&&qd) hit=p.sku.indexOf(qd)>=0||eanObjs(p).some(function(e){return e.code.indexOf(qd)>=0;});
+    if(hit){ res.push(p); if(res.length>=60)break; }
+  }
+  if(!res.length){ box.innerHTML='<div style="color:var(--mut);font-size:13px;padding:8px 2px">Sin coincidencias.</div>'; return; }
+  box.innerHTML='<div style="display:flex;flex-direction:column;gap:8px">'+res.map(function(p){ var s=invStat(p);
+    var pill=s.fis>p.stock?'<span class="pill ex">+'+(s.fis-p.stock)+'</span>':(s.fis<p.stock?'<span class="pill lo">faltan '+(p.stock-s.fis)+'</span>':(p.sku in INV.counts?'<span class="pill ok">OK</span>':''));
+    return '<div class="invtake" style="align-items:flex-start"><div class="m"><div class="nm">'+esc(p.desc||p.sku)+'</div>'+
+      '<div class="sb">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+' · disp '+p.stock+' · físico '+s.fis+' '+pill+'</div>'+
+      '<div class="sb" style="margin-top:2px">EAN: '+esc(eansText(p))+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'+
+        '<div class="stepper"><button data-sm="'+esc(p.sku)+'">−</button><input class="isq" data-q="'+esc(p.sku)+'" type="number" value="1" min="1" inputmode="numeric" style="width:52px"><button data-sp="'+esc(p.sku)+'">+</button></div>'+
+        '<button class="diffbtn" data-adds="'+esc(p.sku)+'">+ Sumar</button>'+
+        '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'">🖼️</button>'+
+      '</div></div></div>'; }).join('')+'</div>';
+  var qOf=function(sku){ var el=box.querySelector('.isq[data-q="'+cssq(sku)+'"]'); return el?Math.max(1,+el.value||1):1; };
+  Array.prototype.forEach.call(box.querySelectorAll('[data-sm]'),function(b){ b.onclick=function(){ var el=box.querySelector('.isq[data-q="'+cssq(b.getAttribute('data-sm'))+'"]'); if(el)el.value=Math.max(1,(+el.value||1)-1); }; });
+  Array.prototype.forEach.call(box.querySelectorAll('[data-sp]'),function(b){ b.onclick=function(){ var el=box.querySelector('.isq[data-q="'+cssq(b.getAttribute('data-sp'))+'"]'); if(el)el.value=(+el.value||0)+1; }; });
+  Array.prototype.forEach.call(box.querySelectorAll('[data-adds]'),function(b){ b.onclick=function(){ var sku=b.getAttribute('data-adds'); invAdd(sku, qOf(sku)); invSearchRender($('isInput').value); }; });
+  Array.prototype.forEach.call(box.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
+}
+function cssq(s){ return String(s).replace(/"/g,'\\"'); }
 var invDiff={filter:'all',sub:'',marca:'',clase:'',subc:'',min:0,q:''};
 // pasa el producto por los filtros de diferencias, ignorando el propio (progresivo)
 function diffPass(p,ex){
@@ -1385,7 +1438,8 @@ function renderInvDiff(){
   h+='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Dif</th><th></th></tr></thead><tbody>';
   shown.forEach(function(p){ var s=invStat(p); var dtxt=s.fis===p.stock?'0':(s.fis>p.stock?'+'+(s.fis-p.stock):String(p.stock-s.fis));
     var col=s.fis===p.stock?'':(s.fis>p.stock?'color:var(--danger)':'color:var(--warn)');
-    h+='<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div>'+
+    h+='<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+'</div>'+
+       '<div style="font-size:10px;color:var(--mut)">EAN: '+esc(eansText(p))+'</div>'+
        '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="margin-top:4px">🖼️ ver</button></td>'+
        '<td class="num">'+p.stock+'</td><td class="num">'+s.fis+'</td><td class="num" style="'+col+'">'+dtxt+'</td>'+
        '<td>'+(s.dif!==0?'<button class="diffbtn" data-cuadra="'+esc(p.sku)+'">'+(s.dif>0?'+'+s.dif:String(s.dif))+' cuadrar</button>':'✓')+'</td></tr>';
@@ -1428,10 +1482,13 @@ function renderInvNf(){
   if(!exc.length){ h+='<div style="color:var(--mut);font-size:13px">Ninguno.</div>'; }
   else{ h+='<div style="overflow:auto"><table class="stk"><thead><tr><th>Producto</th><th class="num">Disp</th><th class="num">Físico</th><th class="num">Exc</th><th></th></tr></thead><tbody>'+
     exc.map(function(p){ var s=invStat(p);
-      return '<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · '+esc(p.sku)+'</div></td>'+
+      return '<tr><td class="desc">'+esc(p.desc||p.sku)+'<div style="font-size:10px;color:var(--mut)">'+esc(brandDisplay(p.marca))+' · SKU '+esc(p.sku)+'</div>'+
+        '<div style="font-size:10px;color:var(--mut)">EAN: '+esc(eansText(p))+'</div>'+
+        '<button class="minibtn" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'" style="margin-top:4px">🖼️ ver</button></td>'+
         '<td class="num">'+p.stock+'</td><td class="num">'+s.fis+'</td><td class="num" style="color:var(--danger)">+'+(s.fis-p.stock)+'</td>'+
         '<td><button class="diffbtn" data-cuadra="'+esc(p.sku)+'">cuadrar</button></td></tr>'; }).join('')+'</tbody></table></div>'; }
   body.innerHTML=h;
+  Array.prototype.forEach.call(body.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
   Array.prototype.forEach.call(body.querySelectorAll('[data-nfdel]'),function(b){ b.onclick=function(){ INV.notFound.splice(+b.getAttribute('data-nfdel'),1); invSaveLocal(); renderInvNf(); }; });
   Array.prototype.forEach.call(body.querySelectorAll('[data-bc]'),function(b){ b.onclick=function(){ showBarcode(b.getAttribute('data-bc')); }; });
   Array.prototype.forEach.call(body.querySelectorAll('[data-cuadra]'),function(b){ b.onclick=function(){ var sku=b.getAttribute('data-cuadra'); var p=findBySku(sku); if(!p)return; INV.counts[sku]=p.stock; INV.history.unshift({sku:sku,qty:0,ts:Date.now()}); invSaveLocal(); invPush(); renderInvNf(); renderInv(); toast('Cuadrado: '+esc(p.desc||sku)); }; });
@@ -1588,7 +1645,10 @@ function init(){
   $('iMinus').onclick=function(){ $('iQty').value=Math.max(1,(+$('iQty').value||1)-1); };
   $('iPlus').onclick=function(){ $('iQty').value=(+$('iQty').value||0)+1; };
   $('iCam').onclick=function(){ INV.scanRoute=true; openScanner(); };
+  $('iSearch').onclick=invSearchOpen;
   $('iPaste').onclick=invPasteOpen;
+  $('isClose').onclick=invSearchClose;
+  $('isInput').addEventListener('input',function(){ invSearchRender(this.value); });
   $('iStart').onclick=invStart;
   $('iNew').onclick=invNew;
   var impInp=document.createElement('input'); impInp.type='file'; impInp.accept='.json,application/json'; impInp.style.display='none';
