@@ -264,6 +264,30 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 #invSearch .isHead input{flex:1; padding:11px 12px; border-radius:11px; border:0; font-size:15px; background:rgba(255,255,255,.92); color:#12151b}
 #invSearch .isClose{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.12);color:var(--accent-ink);font-size:22px;display:grid;place-items:center;flex:0 0 auto}
 #invSearch .isBody{flex:1; overflow:auto; padding:12px 14px calc(env(safe-area-inset-bottom) + 20px)}
+/* ===== Catálogo tipo revista ===== */
+#catalog{position:fixed; inset:0; z-index:85; background:var(--bg); color:var(--ink); display:none; flex-direction:column}
+#catalog.show{display:flex}
+#catalog .cathead{display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 12px) 14px 10px; background:linear-gradient(135deg,var(--accent-2),var(--accent)); color:var(--accent-ink); box-shadow:var(--shadow)}
+#catalog .cathead .ct{font-weight:900; font-size:17px; line-height:1.05; flex:1}
+#catalog .cathead .ct small{display:block; font-weight:700; font-size:11px; opacity:.85}
+#catalog .catx{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.14);color:var(--accent-ink);font-size:20px;display:grid;place-items:center;flex:0 0 auto}
+#catalog .catbar{padding:10px 14px; background:var(--card); box-shadow:var(--shadow)}
+#catalog .catbar input{width:100%; padding:11px 12px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:15px}
+#catalog .catbody{flex:1; overflow:auto; padding:14px 14px calc(env(safe-area-inset-bottom) + 24px)}
+.catgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+@media(min-width:620px){ .catgrid{grid-template-columns:repeat(3,1fr)} }
+@media(min-width:900px){ .catgrid{grid-template-columns:repeat(4,1fr)} }
+.catcard{background:var(--card); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; border:1px solid var(--line)}
+.catcard .ph{position:relative; aspect-ratio:1/1; background:#fff; display:grid; place-items:center; cursor:pointer}
+.catcard .ph img{width:100%; height:100%; object-fit:contain}
+.catcard .ph .noimg{color:#9aa3b2; font-size:30px}
+.catcard .ph .stk{position:absolute; top:8px; left:8px; background:rgba(18,21,27,.82); color:#fff; font-size:10px; font-weight:800; padding:3px 7px; border-radius:999px}
+.catcard .ci{padding:10px 11px 12px; display:flex; flex-direction:column; gap:5px; flex:1}
+.catcard .cn{font-weight:800; font-size:13px; line-height:1.25; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; min-height:2.5em}
+.catcard .cm{font-size:10.5px; color:var(--mut); font-weight:700}
+.catcard .cc{font-size:10px; color:var(--mut); line-height:1.4; word-break:break-all}
+.catcard .cp{margin-top:auto; font-weight:900; font-size:19px; color:var(--accent-ink); background:var(--accent); display:inline-block; padding:4px 10px; border-radius:9px; align-self:flex-start}
+[data-theme="dark"] .catcard .ph{background:#f4f5f7}
 .invhead{display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow)}
 .invhead .t{font-weight:900; flex:1; font-size:17px; line-height:1.1}
 .invhead .t small{display:block; font-weight:700; font-size:11px; opacity:.8}
@@ -358,6 +382,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
       <img src="icons/icon-180.png" class="logo" alt="">
       <div class="htitle">STOCK COSTANERA</div>
       <div class="hspace"></div>
+      <button class="iconbtn" id="btnCat" title="Catálogo videojuegos">🎮</button>
       <button class="iconbtn" id="btnDark" title="Modo oscuro">🌙</button>
       <button class="iconbtn" id="btnSet" title="Configuración">⚙️</button>
     </div>
@@ -429,6 +454,16 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
     <button class="isClose" id="isClose">×</button>
   </div>
   <div class="isBody"><div id="isResults"></div></div>
+</div>
+
+<!-- Catálogo tipo revista (videojuegos) -->
+<div id="catalog">
+  <div class="cathead">
+    <div class="ct">Catálogo videojuegos<small id="catSub">—</small></div>
+    <button class="catx" id="catClose">×</button>
+  </div>
+  <div class="catbar"><input id="catSearch" autocomplete="off" placeholder="🔍 Buscar por nombre, marca o código"></div>
+  <div class="catbody"><div id="catGrid"></div></div>
 </div>
 
 <!-- Scanner -->
@@ -786,7 +821,8 @@ function parseData(txt){
     var ean=(f[11]||'').trim(); var st=parseNum(f[15]);
     if(!map[sku]){ map[sku]={sku:sku,linea:(f[1]||'').trim(),lineaN:(f[2]||'').trim(),sub:(f[3]||'').trim(),subN:(f[4]||'').trim(),
       clase:(f[5]||'').trim(),claseN:(f[6]||'').trim(),subc:(f[7]||'').trim(),subcN:(f[8]||'').trim(),marca:(f[9]||'').trim(),
-      desc:(f[12]||'').trim(),stock:0,eans:[]}; order.push(sku); }
+      desc:(f[12]||'').trim(),pvta:parseNum(f[13]),stock:0,eans:[]}; order.push(sku); }
+    else if(!map[sku].pvta){ map[sku].pvta=parseNum(f[13]); }
     map[sku].stock += st;   // stock del SKU = suma de todas sus filas (cada EAN aporta el suyo)
     if(ean){ var found=null; for(var j=0;j<map[sku].eans.length;j++){ if(map[sku].eans[j].code===ean){found=map[sku].eans[j];break;} }
       if(found) found.stock+=st; else map[sku].eans.push({code:ean,stock:st}); }
@@ -969,6 +1005,36 @@ function openImage(sku,name){
   img.src=imgUrl(sku); $('lightbox').classList.add('show');
 }
 function closeImage(){ $('lightbox').classList.remove('show'); $('lbImg').src=''; }
+
+/* ===== Catálogo tipo revista (videojuegos) ===== */
+var CAT_SUB='J1113'; // sublínea VIDEO JUEGOS
+function fmtCLP(n){ n=Math.round(+n||0); return '$'+String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function catList(){ return PRODUCTS.filter(function(p){ return p.sub===CAT_SUB && p.stock>0; }); }
+function openCatalog(){ $('catSearch').value=''; $('catalog').classList.add('show'); renderCatalog(''); }
+function closeCatalog(){ $('catalog').classList.remove('show'); }
+function renderCatalog(txt){
+  var q=up(txt||'').trim(), qd=(txt||'').replace(/\D/g,'');
+  var ps=catList();
+  if(q||qd){ ps=ps.filter(function(p){
+    var hit=q && (up(p.desc).indexOf(q)>=0 || up(brandDisplay(p.marca)).indexOf(q)>=0 || up(p.sku).indexOf(q)>=0);
+    if(!hit && qd) hit=p.sku.indexOf(qd)>=0 || eanObjs(p).some(function(e){return e.code.indexOf(qd)>=0;});
+    return hit; }); }
+  ps.sort(function(a,b){ return String(a.desc||a.sku).localeCompare(String(b.desc||b.sku),'es'); });
+  $('catSub').textContent=ps.length+' producto'+(ps.length===1?'':'s')+' con stock'+(META&&META.fecha?' · '+new Date(META.fecha).toLocaleDateString('es-CL'):'');
+  var grid=$('catGrid');
+  if(!ps.length){ grid.className=''; grid.innerHTML='<div style="color:var(--mut);font-size:14px;padding:20px 4px;text-align:center">'+(catList().length?'Sin coincidencias.':'No hay videojuegos con stock en el archivo del día. Pide al administrador subir el archivo (con la columna de precio) para ver precios.')+'</div>'; return; }
+  grid.className='catgrid';
+  grid.innerHTML=ps.map(function(p){ var eans=eanCodes(p);
+    var price=p.pvta>0?fmtCLP(p.pvta):'<span style="font-size:12px;color:var(--mut);background:none;padding:0">consultar</span>';
+    return '<div class="catcard"><div class="ph" data-img="'+esc(p.sku)+'" data-nm="'+esc(p.desc||'')+'">'+
+        '<img loading="lazy" src="'+esc(imgUrl(p.sku))+'" alt="" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<div class=\\\'noimg\\\'>🎮</div>\')">'+
+        '<span class="stk">'+p.stock+' u.</span></div>'+
+      '<div class="ci"><div class="cn">'+esc(p.desc||p.sku)+'</div>'+
+        '<div class="cm">'+esc(brandDisplay(p.marca))+'</div>'+
+        '<div class="cc">SKU '+esc(p.sku)+(eans.length?'<br>EAN '+esc(eans.join(' · ')):'')+'</div>'+
+        '<div class="cp">'+price+'</div></div></div>'; }).join('');
+  Array.prototype.forEach.call(grid.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
+}
 
 /* ===== Código de barras (JsBarcode) ===== */
 async function showBarcode(code){
@@ -1633,6 +1699,9 @@ function init(){
 
   // App header
   $('btnDark').onclick=toggleDark;
+  $('btnCat').onclick=openCatalog;
+  $('catClose').onclick=closeCatalog;
+  $('catSearch').addEventListener('input',function(){ renderCatalog(this.value); });
   $('btnSet').onclick=openConfig;
   $('btnScan').onclick=openScanner;
   $('scanClose').onclick=closeScanner;
