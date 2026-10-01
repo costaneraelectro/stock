@@ -1032,8 +1032,10 @@ function renderCatalog(txt){
       '<div class="ci"><div class="cn">'+esc(p.desc||p.sku)+'</div>'+
         '<div class="cm">'+esc(brandDisplay(p.marca))+'</div>'+
         '<div class="cc">SKU '+esc(p.sku)+(eans.length?'<br>EAN '+esc(eans.join(' · ')):'')+'</div>'+
+        '<button class="imgbtn bc2" data-bc="'+esc(p.sku)+'" style="margin:2px 0">▐║▐ Código</button>'+
         '<div class="cp">'+price+'</div></div></div>'; }).join('');
   Array.prototype.forEach.call(grid.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-img'), b.getAttribute('data-nm')); }; });
+  Array.prototype.forEach.call(grid.querySelectorAll('[data-bc]'),function(b){ b.onclick=function(e){ e.stopPropagation(); showCardBarcode(b.getAttribute('data-bc')); }; });
 }
 
 /* ===== Código de barras (JsBarcode) ===== */
