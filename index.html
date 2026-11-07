@@ -294,7 +294,7 @@ button:active:not(:disabled){transform:scale(.97)}
 #catalog .catx{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.14);color:var(--accent-ink);font-size:20px;display:grid;place-items:center;flex:0 0 auto}
 #catalog .catbar{padding:10px 14px; background:var(--card); box-shadow:var(--shadow)}
 #catalog .catbar input{width:100%; padding:11px 12px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:15px}
-#catalog .catbody{flex:1; overflow:auto; padding:14px 14px calc(env(safe-area-inset-bottom) + 24px)}
+#catalog .catbody, #tree .catbody{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(env(safe-area-inset-bottom) + 24px)}
 .catgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
 @media(min-width:620px){ .catgrid{grid-template-columns:repeat(3,1fr)} }
 @media(min-width:900px){ .catgrid{grid-template-columns:repeat(4,1fr)} }
@@ -358,6 +358,36 @@ button:active:not(:disabled){transform:scale(.97)}
 .treeitem .tstk b{display:block; font-size:17px; font-weight:900; line-height:1}
 .treeitem .tstk small{font-size:9px; text-transform:uppercase; letter-spacing:.3px; color:var(--mut); font-weight:800}
 .treeitem .tstk.has b{color:#0f8a3d} .treeitem .tstk.no b{color:#b4151c; font-size:12px}
+/* ===== Detalle de regalable ===== */
+#regDetail{position:fixed; inset:0; z-index:88; background:var(--bg); color:var(--ink); display:none; flex-direction:column}
+#regDetail.show{display:flex}
+#regDetail .rdhead{display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 12px) 14px 10px; background:linear-gradient(135deg,#0f8a3d,#b4151c); color:#fff; box-shadow:var(--shadow)}
+#regDetail .ct{font-weight:900; font-size:16px; line-height:1.1; flex:1}
+#regDetail .catx{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.2);color:#fff;font-size:20px;display:grid;place-items:center;flex:0 0 auto}
+#regDetail .rdbody{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(env(safe-area-inset-bottom) + 28px)}
+.rdhero{display:flex; gap:12px; align-items:center; margin-bottom:12px}
+.rdhero .rdimg{width:120px;height:120px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid var(--line);flex:0 0 auto;cursor:pointer}
+.rdhero .rdnoimg{width:120px;height:120px;border-radius:14px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:40px;color:#9aa3b2;flex:0 0 auto}
+.rdname{font-weight:900;font-size:17px;line-height:1.15}
+.rdmarca{font-size:12px;color:var(--mut);font-weight:800;text-transform:uppercase;margin-top:3px}
+.rdsum{display:flex;gap:8px;margin:4px 0 14px}
+.rdsumb{flex:1;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:11px;text-align:center}
+.rdsumb b{display:block;font-size:22px;font-weight:900;line-height:1}
+.rdsumb.has b{color:#0f8a3d} .rdsumb span{font-size:9.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--mut);font-weight:800}
+.rdrow{display:flex;gap:9px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:9px 10px;margin-bottom:8px}
+.rdrow .pimg{width:52px;height:52px;border-radius:10px;object-fit:contain;background:#fff;border:1px solid var(--line);flex:0 0 auto;cursor:pointer}
+.rdrow .pnoimg{width:52px;height:52px;border-radius:10px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:20px;color:#9aa3b2;flex:0 0 auto}
+.rdrow .rdi{flex:1;min-width:0}
+.rdrow .rdsku{font-weight:800;font-size:14px}
+.rdrow .rdst{font-size:11px;color:var(--mut);font-weight:700;margin-top:1px}
+.rdrow .rdst b{color:#0f8a3d}
+.rdinfo{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:14px;font-size:12.5px;line-height:1.7;color:var(--mut)}
+.rdinfo b{color:var(--ink)}
+.rdmueble{width:100%;border-radius:13px;object-fit:cover;max-height:200px;background:#fff;border:1px solid var(--line);cursor:pointer;margin-top:6px}
+.rdsec{font-size:11px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin:4px 2px 8px}
+.apuesta{font-size:9.5px;font-weight:900;color:#fff;background:#b4151c;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.treecard .ph .apuesta{position:absolute;top:8px;right:8px}
+.treecard,.treeitem{cursor:pointer}
 .invhead{display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow)}
 .invhead .t{font-weight:900; flex:1; font-size:17px; line-height:1.1}
 .invhead .t small{display:block; font-weight:700; font-size:11px; opacity:.8}
@@ -500,6 +530,12 @@ button:active:not(:disabled){transform:scale(.97)}
 
 <div class="sheet-bg" id="profBg"></div>
 <div class="sheet" id="profSheet"><div class="grip"></div><button class="sheetx" data-close="profSheet">×</button><div class="pad" id="profPad"></div></div>
+
+<!-- Detalle de regalable / apuesta -->
+<div id="regDetail">
+  <div class="rdhead"><div class="ct" id="rdTitle">Detalle</div><button class="catx" id="rdClose">×</button></div>
+  <div class="rdbody" id="rdBody"></div>
+</div>
 
 <!-- Image lightbox -->
 <div class="lightbox" id="lightbox">
@@ -663,7 +699,7 @@ var K={DATA:'stk-data',META:'stk-meta',ACCENT:'stk-accent',THEME:'stk-theme',LOW
 var RAWTEXT='';   // texto CRUDO del archivo (para reconstruir CSV formato original)
 var ADMIN_KEY='connect2025';
 var PRODUCTS=[], META={fecha:null,archivo:null,filas:0};
-var REGALABLES=[{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11","m":"SLEVE","d":"AUDIFONOS PRO FIT BLACK","s":["80814707","80814711"],"img":"m11.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11","m":"XIAOMI","d":"PARLANTE","s":["80828223","80828224"],"img":"m11.jpg"},{"f":"PINO CAJAS MARCA","u":"PASILLO","w":"J11","m":"HONOR","d":"TABLET X7B 9,7\" 4GB 128GB + COVER","s":["80865679"],"img":"m05.jpg"},{"f":"PINO CAJAS MARCA","u":"PASILLO","w":"J11","m":"LENOVO","d":"TABLET PLUS  12\" 8GB 256GB + KEYBOARD COVER + LAPIZ","s":["80668316"],"img":"m07.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HONOR","d":"SMART TAG","s":["80748219"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"PRIMUS","d":"CONTROL GAMER CELULAR","s":["80862612"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HP","d":"COMBO HP 2X","s":["80862755"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"BLIK","d":"BUDS AIR500 | AUDIFONOS SOUL900","s":["80767932","80767933","80505631","17240372","17431416"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HUAWEI","d":"BUDS","s":["80752400","80752399"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"SLEVE","d":"PARLANTE + AUDIFONO (PACK ONE BOOM) | AUDIFONO AIRE ONE BLACK","s":["80814709","80814710","80814712","80814708"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"PHILIPS","d":"KARAOKE PORTATIL","s":["17251306"],"img":"m12.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"LENOVO","d":"TABLET PLUS  12\" 8GB 256GB + KEYBOARD COVER + LAPIZ","s":["80668316"],"img":"m01.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"MARSHALL","d":"PARLANTE","s":["80757805","17450989"],"img":"m02.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"BOSE","d":"PARLANTE","s":["80763895"],"img":"m03.jpg"},{"f":"TOTEM MARCA","u":"PASILLO","w":"J11","m":"LOGITECH","d":"SIMULADOR","s":["15567055"],"img":"m04.jpg"},{"f":"TOTEM MARCA","u":"PASILLO","w":"J11","m":"REDRAGON","d":"SIMULADOR REDRAGON","s":["80863561"],"img":"m04.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"BLIK","d":"PARLANTE BLIK-BASSGO | PARLANTE BLIK-POWERBASS30","s":["80767926","80767929","80767927","80767930","80614153","80767319","80767321","80767320","80767322"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"KLIPXTREME","d":"BUDS","s":["80728591","80728592"],"img":"m12.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J01","m":"AMAZON","d":"ALEXA","s":["153874952"],"img":"m11.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"XTECH","d":"ANTEOJOS","s":["80863744"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"HYPERX","d":"COMBO HYPERX 2X","s":["80862752","80862756"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"SLEVE","d":"POWER BANK 10.000","s":["80862855","80862857","80862856","80862858","80862854"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"BLIK","d":"PACK BUDS + PARLANTE","s":["17471271","17471273","80768085","80768086","80768087"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"HUAWEI","d":"SMART WATCH","s":["17387969","17387970"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"SAMSUNG","d":"SMART WATCH","s":["17032337","17032338","17032339"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"XIAOMI","d":"SMARTBAND 11 ACTIVE | REDMI WATCH 6 ACTIVE| REDMI BUDS 6","s":["17764877","17764878","17764879","17284712","17365410","17284711","80528728","17764873","17764875","17764876"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"HONOR","d":"BUDS Y SMART WATCH","s":["17363781","17441649"],"img":"m12.jpg"},{"f":"TOTEM GLORIFICADOR + MESA","u":"PASILLO","w":"J11 | J03","m":"GARMIN","d":"SMART WATCH","s":["17363751","17363752"],"img":"m06.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J05","m":"KODAK","d":"CAMARA \"KODAK\"","s":["80870573","80870574","80870575"],"img":"m11.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"XTECH","d":"CORREA STRAP CELULAR CARGADOR","s":["80863745","80863746","80863747"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"MASTER G","d":"BATERIA","s":["80863571","80863572","80863574","80863577","80863575","80863573","80863576"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"JBL","d":"AUDIFONOS TWS WAVE FLEX | PARLANTE CLIP","s":["80865421","80865423","80865419","17188061","17188062","80611367","80865420","17188063"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SLEVE","d":"PARLANTE BOOM MINI PAISAJES CHILENOS","s":["80814692","80814695","80814697","80814699","80814700"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SLEVE","d":"BUDS PURE X","s":["80814693","80814694","80814696","80814698","80814701"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SONY","d":"AUDIFONOS BLUETOOTH","s":["16813218","17290780","16813219","17429405","16813221","17431421"],"img":"m12.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J05 | J01","m":"DDESIGN","d":"VENTILADOR","s":["883993619","883993623","883993621"],"img":"m11.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J09","m":"PLAYSTATION","d":"CONTROL DUALSENSE PLAYSTATION","s":["14557291","15418171"],"img":"m11.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J09","m":"POKU","d":"SMART WATCH INFANTIL","s":["883997617","883997621"],"img":"m11.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J09","m":"REDRAGON","d":"CONTROL ALTERNATIVO PS5","s":["80863563"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J09","m":"KLIPXTREME","d":"KARAOKE Y HEAD SET","s":["80736971","80736970","80736969","80865424","80865425"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J09","m":"RECCO","d":"MINI WAFFLERA ELÉCTRICA","s":["881971893","881985227","881985225"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J09","m":"RECCO","d":"MÁQUINA DE HELADO","s":["883579355","883579349","883579357"],"img":"m12.jpg"},{"f":"MESA ULA","u":"CUIDADO PERSONAL","w":"J1109","m":"ULA","d":"MULTISTYLER ULA EVOLUTION - CEPILLO ULA AIRFLOW 4 EN 1","s":["883930252","883930250"],"img":"m08.jpg"},{"f":"CRUCETA PERFUMERIA","u":"PASILLO","w":"J1109","m":"ULA","d":"ONDULADOR ULA AUTOCURL HALO","s":["883930254"],"img":"m09.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109","m":"PHILIPS","d":"AFEITADORA ONE BLADE","s":["16746420"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109","m":"SIEGEN","d":"SECADOR TRAVEL","s":["80872534","80872533","80872532"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J01","m":"YOON","d":"AFEITADORA METALICA PORTATIL","s":["883937594","883937598","883937576","883937590"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J06","m":"PHILIPS","d":"PACK DEPILADORA FACIAL Y CREMA","s":[],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J06","m":"YOON","d":"DEPILADORA FACIAL","s":["883937574"],"img":"m12.jpg"},{"f":"MESA MADERA EVENTOS | DECO","u":"BARANDA ESCALA","w":"J15","m":"RECCO","d":"MÁQUINA DE WAFFLES - MÁQUINA DE CREPES - MÁQUINA DE DONUTS - CÁSCADA DE CHOCOLATE - MÁQUINA DE ALGODÓN DE AZUCAR - MÁQUINA DE POPCORN","s":["883403524","883450752","883450744","883597666","883540165","883540163"],"img":"m10.jpg"}];  // regalables Electro (grilla); stock se sincroniza por SKU
+var REGALABLES=[{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11","m":"SLEVE","d":"AUDIFONOS PRO FIT BLACK","s":["80814707","80814711"],"img":"m01.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11","m":"XIAOMI","d":"PARLANTE","s":["80828223","80828224"],"img":"m01.jpg"},{"f":"PINO CAJAS MARCA","u":"PASILLO","w":"J11","m":"HONOR","d":"TABLET X7B 9,7\" 4GB 128GB + COVER","s":["80865679"],"img":"m07.jpg"},{"f":"PINO CAJAS MARCA","u":"PASILLO","w":"J11","m":"LENOVO","d":"TABLET PLUS  12\" 8GB 256GB + KEYBOARD COVER + LAPIZ","s":["80668316"],"img":"m10.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HONOR","d":"SMART TAG","s":["80748219"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"PRIMUS","d":"CONTROL GAMER CELULAR","s":["80862612"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HP","d":"COMBO HP 2X","s":["80862755"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"BLIK","d":"BUDS AIR500 | AUDIFONOS SOUL900","s":["80767932","80767933","80505631","17240372","17431416"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HUAWEI","d":"BUDS","s":["80752400","80752399"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"SLEVE","d":"PARLANTE + AUDIFONO (PACK ONE BOOM) | AUDIFONO AIRE ONE BLACK","s":["80814709","80814710","80814712","80814708"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"PHILIPS","d":"KARAOKE PORTATIL","s":["17251306"],"img":"m12.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"LENOVO","d":"TABLET PLUS  12\" 8GB 256GB + KEYBOARD COVER + LAPIZ","s":["80668316"],"img":"m02.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"MARSHALL","d":"PARLANTE","s":["80757805","17450989"],"img":"m03.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"BOSE","d":"PARLANTE","s":["80763895"],"img":"m04.jpg"},{"f":"TOTEM MARCA","u":"PASILLO","w":"J11","m":"LOGITECH","d":"SIMULADOR","s":["15567055"],"img":"m05.jpg"},{"f":"TOTEM MARCA","u":"PASILLO","w":"J11","m":"REDRAGON","d":"SIMULADOR REDRAGON","s":["80863561"],"img":"m05.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"BLIK","d":"PARLANTE BLIK-BASSGO | PARLANTE BLIK-POWERBASS30","s":["80767926","80767929","80767927","80767930","80614153","80767319","80767321","80767320","80767322"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"KLIPXTREME","d":"BUDS","s":["80728591","80728592"],"img":"m12.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J01","m":"AMAZON","d":"ALEXA","s":["153874952"],"img":"m01.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"XTECH","d":"ANTEOJOS","s":["80863744"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"HYPERX","d":"COMBO HYPERX 2X","s":["80862752","80862756"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"SLEVE","d":"POWER BANK 10.000","s":["80862855","80862857","80862856","80862858","80862854"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"BLIK","d":"PACK BUDS + PARLANTE","s":["17471271","17471273","80768085","80768086","80768087"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"HUAWEI","d":"SMART WATCH","s":["17387969","17387970"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"SAMSUNG","d":"SMART WATCH","s":["17032337","17032338","17032339"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"XIAOMI","d":"SMARTBAND 11 ACTIVE | REDMI WATCH 6 ACTIVE| REDMI BUDS 6","s":["17764877","17764878","17764879","17284712","17365410","17284711","80528728","17764873","17764875","17764876"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"HONOR","d":"BUDS Y SMART WATCH","s":["17363781","17441649"],"img":"m12.jpg"},{"f":"TOTEM GLORIFICADOR + MESA","u":"PASILLO","w":"J11 | J03","m":"GARMIN","d":"SMART WATCH","s":["17363751","17363752"],"img":"m06.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J05","m":"KODAK","d":"CAMARA \"KODAK\"","s":["80870573","80870574","80870575"],"img":"m01.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"XTECH","d":"CORREA STRAP CELULAR CARGADOR","s":["80863745","80863746","80863747"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"MASTER G","d":"BATERIA","s":["80863571","80863572","80863574","80863577","80863575","80863573","80863576"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"JBL","d":"AUDIFONOS TWS WAVE FLEX | PARLANTE CLIP","s":["80865421","80865423","80865419","17188061","17188062","80611367","80865420","17188063"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SLEVE","d":"PARLANTE BOOM MINI PAISAJES CHILENOS","s":["80814692","80814695","80814697","80814699","80814700"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SLEVE","d":"BUDS PURE X","s":["80814693","80814694","80814696","80814698","80814701"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SONY","d":"AUDIFONOS BLUETOOTH","s":["16813218","17290780","16813219","17429405","16813221","17431421"],"img":"m12.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J05 | J01","m":"DDESIGN","d":"VENTILADOR","s":["883993619","883993623","883993621"],"img":"m01.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J09","m":"PLAYSTATION","d":"CONTROL DUALSENSE PLAYSTATION","s":["14557291","15418171"],"img":"m01.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J09","m":"POKU","d":"SMART WATCH INFANTIL","s":["883997617","883997621"],"img":"m01.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J09","m":"REDRAGON","d":"CONTROL ALTERNATIVO PS5","s":["80863563"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J09","m":"KLIPXTREME","d":"KARAOKE Y HEAD SET","s":["80736971","80736970","80736969","80865424","80865425"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J09","m":"RECCO","d":"MINI WAFFLERA ELÉCTRICA","s":["881971893","881985227","881985225"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J09","m":"RECCO","d":"MÁQUINA DE HELADO","s":["883579355","883579349","883579357"],"img":"m12.jpg"},{"f":"MESA ULA","u":"CUIDADO PERSONAL","w":"J1109","m":"ULA","d":"MULTISTYLER ULA EVOLUTION - CEPILLO ULA AIRFLOW 4 EN 1","s":["883930252","883930250"],"img":"m08.jpg"},{"f":"CRUCETA PERFUMERIA","u":"PASILLO","w":"J1109","m":"ULA","d":"ONDULADOR ULA AUTOCURL HALO","s":["883930254"],"img":"m09.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109","m":"PHILIPS","d":"AFEITADORA ONE BLADE","s":["16746420"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109","m":"SIEGEN","d":"SECADOR TRAVEL","s":["80872534","80872533","80872532"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J01","m":"YOON","d":"AFEITADORA METALICA PORTATIL","s":["883937594","883937598","883937576","883937590"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J06","m":"PHILIPS","d":"PACK DEPILADORA FACIAL Y CREMA","s":[],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J06","m":"YOON","d":"DEPILADORA FACIAL","s":["883937574"],"img":"m12.jpg"},{"f":"MESA MADERA EVENTOS | DECO","u":"BARANDA ESCALA","w":"J15","m":"RECCO","d":"MÁQUINA DE WAFFLES - MÁQUINA DE CREPES - MÁQUINA DE DONUTS - CÁSCADA DE CHOCOLATE - MÁQUINA DE ALGODÓN DE AZUCAR - MÁQUINA DE POPCORN","s":["883403524","883450752","883450744","883597666","883540165","883540163"],"img":"m11.jpg"}];  // regalables Electro (grilla); stock se sincroniza por SKU
 var FILT={q:'',linea:'',sub:'',clase:'',subc:'',marca:'',low:false};
 var SETUNLOCKED=false; // configuración desbloqueada en esta apertura
 
@@ -1242,6 +1278,44 @@ function treePass(r,ex){
 function treeDistinct(getv,ex){ var seen={},out=[]; REGALABLES.forEach(function(r){ if(!treePass(r,ex))return; var v=getv(r); if(v&&!seen[up(v)]){seen[up(v)]=1;out.push(v);} }); out.sort(function(a,b){return String(a).localeCompare(String(b),'es');}); return out; }
 function openTree(){ treeF={formato:'',ubic:'',marca:'',stock:'all',q:'',view:treeF.view||'cat'}; $('treeSearch').value=''; $('tree').classList.add('show'); renderTree(); }
 function closeTree(){ $('tree').classList.remove('show'); }
+/* Código de barras de un SKU de regalable (usa el EAN con stock si existe; si no, el SKU) */
+function regBarcode(sku){ var p=findBySku(sku); var pe=p?primaryEan(p):null; showBarcode(pe?pe.code:sku); }
+function openRegDetail(gi){
+  var r=REGALABLES[gi]; if(!r) return;
+  $('regDetail').classList.add('show'); renderRegDetail(r);
+}
+function closeRegDetail(){ $('regDetail').classList.remove('show'); }
+function renderRegDetail(r){
+  var skus=r.s||[]; var total=0, conStock=0;
+  skus.forEach(function(sku){ var p=findBySku(sku); if(p){ total+=p.stock; if(p.stock>0)conStock++; } });
+  var hero=skus[0]||'';
+  $('rdTitle').textContent=r.d||'Detalle';
+  var h='';
+  // hero
+  h+='<div class="rdhero">'+(hero?'<img class="rdimg" src="'+esc(imgUrl(hero))+'" data-amp="'+esc(hero)+'" data-nm="'+esc(r.d||'')+'" alt="" onerror="this.outerHTML=\'<div class=\\\'rdnoimg\\\'>🎁</div>\'">':'<div class="rdnoimg">🎁</div>')+
+     '<div><div class="rdname">'+esc(r.d||'Regalable')+'</div><div class="rdmarca">'+esc(brandDisplay(r.m)||r.m)+'</div></div></div>';
+  // resumen: suma stock + cantidad de SKU
+  h+='<div class="rdsum"><div class="rdsumb'+(total>0?' has':'')+'"><b>'+(PRODUCTS.length?total:'—')+'</b><span>Stock total</span></div>'+
+     '<div class="rdsumb"><b>'+skus.length+'</b><span>'+(skus.length===1?'SKU':'SKU (apuesta)')+'</span></div>'+
+     '<div class="rdsumb"><b>'+conStock+'</b><span>con stock</span></div></div>';
+  // info exhibición
+  h+='<div class="rdinfo">📦 Formato: <b>'+esc(r.f||'—')+'</b><br>📍 Ubicación: <b>'+esc(r.u||'—')+'</b><br>🏷️ Línea: <b>'+esc(r.w||'—')+'</b></div>';
+  // SKUs: foto + stock + código de barras
+  h+='<div class="rdsec">Productos / SKU ('+skus.length+')</div>';
+  if(!skus.length) h+='<div style="color:var(--mut);font-size:13px;margin-bottom:12px">Sin SKU registrado.</div>';
+  skus.forEach(function(sku){ var p=findBySku(sku); var st=p?p.stock:null;
+    h+='<div class="rdrow"><img class="pimg" src="'+esc(imgUrl(sku))+'" data-amp="'+esc(sku)+'" data-nm="'+esc(r.d||'')+'" alt="" onerror="this.outerHTML=\'<div class=\\\'pnoimg\\\'>🎁</div>\'">'+
+       '<div class="rdi"><div class="rdsku">SKU '+esc(sku)+'</div>'+
+       '<div class="rdst">'+(p?(st>0?'<b>'+st+' unidades</b>':'Agotado'):(PRODUCTS.length?'No está en el stock de hoy':'Sube el stock para ver unidades'))+'</div></div>'+
+       '<button class="minibtn bc2" data-bc="'+esc(sku)+'">▐║▐ Código</button></div>';
+  });
+  // mueble
+  if(r.img){ h+='<div class="rdsec">Mueble / dónde se exhibe</div><img class="rdmueble" src="regalables/'+esc(r.img)+'" data-ampsrc="regalables/'+esc(r.img)+'" data-mcap="'+esc(r.f)+'" alt="mueble">'; }
+  var body=$('rdBody'); body.innerHTML=h;
+  Array.prototype.forEach.call(body.querySelectorAll('[data-amp]'),function(b){ b.onclick=function(){ openImage(b.getAttribute('data-amp'), b.getAttribute('data-nm')); }; });
+  Array.prototype.forEach.call(body.querySelectorAll('[data-ampsrc]'),function(b){ b.onclick=function(){ openImageSrc(b.getAttribute('data-ampsrc'), b.getAttribute('data-mcap')||'Mueble', 'Dónde se exhibe'); }; });
+  Array.prototype.forEach.call(body.querySelectorAll('[data-bc]'),function(b){ b.onclick=function(){ regBarcode(b.getAttribute('data-bc')); }; });
+}
 function treeList(){
   var q=up(treeF.q||'').trim(), qd=(treeF.q||'').replace(/\D/g,'');
   return REGALABLES.filter(function(r){
@@ -1274,12 +1348,12 @@ function renderTree(){
   if(!list.length){ grid.className=''; grid.innerHTML='<div style="color:var(--mut);font-size:14px;padding:24px 4px;text-align:center">Sin resultados con estos filtros.</div>'; }
   else if(treeF.view==='list'){
     grid.className='treelist';
-    grid.innerHTML=list.map(function(r){ var st=regStock(r); var sku=(r.s&&r.s[0])||''; var nm=r.d||'Regalable';
-      var pimg=sku?'<img class="pimg" loading="lazy" src="'+esc(imgUrl(sku))+'" data-img="'+esc(sku)+'" data-nm="'+esc(nm)+'" alt="" onerror="this.outerHTML=\'<div class=\\\'pnoimg\\\'>🎁</div>\'">':'<div class="pnoimg">🎁</div>';
-      var mimg=r.img?'<img class="mimg" loading="lazy" src="regalables/'+esc(r.img)+'" data-mueble="regalables/'+esc(r.img)+'" data-mcap="'+esc(r.f)+'" alt="mueble">':'';
+    grid.innerHTML=list.map(function(r){ var gi=REGALABLES.indexOf(r); var st=regStock(r); var sku=(r.s&&r.s[0])||''; var nm=r.d||'Regalable'; var nsku=(r.s||[]).length;
+      var pimg=sku?'<img class="pimg" loading="lazy" src="'+esc(imgUrl(sku))+'" alt="" onerror="this.outerHTML=\'<div class=\\\'pnoimg\\\'>🎁</div>\'">':'<div class="pnoimg">🎁</div>';
+      var mimg=r.img?'<img class="mimg" loading="lazy" src="regalables/'+esc(r.img)+'" alt="mueble">':'';
       var stk=!PRODUCTS.length?'<div class="tstk has"><b>🎁</b><small>regalable</small></div>':(st.stock>0?'<div class="tstk has"><b>'+st.stock+'</b><small>unidades</small></div>':'<div class="tstk no"><b>Agotado</b><small>&nbsp;</small></div>');
-      return '<div class="treeitem"><div class="thumbs">'+pimg+mimg+'</div>'+
-        '<div class="ti"><div class="tn">'+esc(nm)+'</div>'+
+      return '<div class="treeitem" data-reg="'+gi+'"><div class="thumbs">'+pimg+mimg+'</div>'+
+        '<div class="ti"><div class="tn">'+esc(nm)+(nsku>1?' <span class="apuesta">'+nsku+' SKU</span>':'')+'</div>'+
         '<div class="tmeta">'+esc(brandDisplay(r.m)||r.m)+'</div>'+
         '<div class="ttags">📦 '+esc(r.f||'—')+' · 📍 '+esc(r.u||'—')+(r.w?' · '+esc(r.w):'')+'<br>SKU '+esc((r.s||[]).join(' · ')||'—')+'</div></div>'+
         stk+'</div>';
@@ -1287,19 +1361,18 @@ function renderTree(){
   }
   else{
     grid.className='catgrid';
-    grid.innerHTML=list.map(function(r){ var st=regStock(r); var p=regProd(r); var sku=(r.s&&r.s[0])||''; var nm=r.d||(p&&p.desc)||'Regalable';
+    grid.innerHTML=list.map(function(r){ var gi=REGALABLES.indexOf(r); var st=regStock(r); var p=regProd(r); var sku=(r.s&&r.s[0])||''; var nm=r.d||(p&&p.desc)||'Regalable'; var nsku=(r.s||[]).length;
       var badge=!PRODUCTS.length?'<span class="stk has">🎁</span>':(st.stock>0?'<span class="stk has">'+st.stock+' u.</span>':'<span class="stk no">Agotado</span>');
       var img=sku?'<img loading="lazy" src="'+esc(imgUrl(sku))+'" alt="" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<div class=\\\'noimg\\\'>🎁</div>\')">':'<div class="noimg">🎁</div>';
-      var mueble=r.img?'<img class="mueble" loading="lazy" src="regalables/'+esc(r.img)+'" data-mueble="regalables/'+esc(r.img)+'" data-mcap="'+esc(r.f)+'" alt="mueble">':'';
-      return '<div class="treecard"><div class="ph" data-img="'+esc(sku)+'" data-nm="'+esc(nm)+'">'+img+badge+mueble+'</div>'+
+      var mueble=r.img?'<img class="mueble" loading="lazy" src="regalables/'+esc(r.img)+'" alt="mueble">':'';
+      return '<div class="treecard" data-reg="'+gi+'"><div class="ph">'+img+badge+mueble+(nsku>1?'<span class="apuesta">'+nsku+' SKU</span>':'')+'</div>'+
         '<div class="ci"><div class="cn">'+esc(nm)+'</div>'+
         '<div class="cm">'+esc(brandDisplay(r.m)||r.m)+'</div>'+
         '<div class="tags"><span class="tg f">📦 '+esc(r.f||'—')+'</span><span class="tg">📍 '+esc(r.u||'—')+'</span>'+(r.w?'<span class="tg">'+esc(r.w)+'</span>':'')+'</div>'+
         '<div class="cc">SKU '+esc((r.s||[]).join(' · ')||'—')+'</div></div></div>';
     }).join('');
   }
-  Array.prototype.forEach.call(grid.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ var s=b.getAttribute('data-img'); if(s) openImage(s,b.getAttribute('data-nm')); }; });
-  Array.prototype.forEach.call(grid.querySelectorAll('[data-mueble]'),function(b){ b.onclick=function(e){ e.stopPropagation(); openImageSrc(b.getAttribute('data-mueble'), b.getAttribute('data-mcap')||'Mueble', 'Dónde se exhibe'); }; });
+  Array.prototype.forEach.call(grid.querySelectorAll('[data-reg]'),function(b){ b.onclick=function(){ openRegDetail(+b.getAttribute('data-reg')); }; });
   $('treeViewCat').onclick=function(){ treeF.view='cat'; renderTree(); };
   $('treeViewList').onclick=function(){ treeF.view='list'; renderTree(); };
   $('treeFormato').onchange=function(){ treeF.formato=this.value; renderTree(); };
@@ -1996,6 +2069,7 @@ function init(){
   $('btnProfile').onclick=openProfile;
   $('btnTree').onclick=openTree;
   $('treeClose').onclick=closeTree;
+  $('rdClose').onclick=closeRegDetail;
   $('btnSet').onclick=openConfig;
   $('btnScan').onclick=openScanner;
   $('scanClose').onclick=closeScanner;
