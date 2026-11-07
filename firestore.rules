@@ -1,15 +1,28 @@
 rules_version = '2';
 // Reglas de seguridad de Firestore para "Stock Costanera".
 // Cópialas en: Firebase Console -> Firestore Database -> Reglas -> Publicar.
-// El administrador es quien inicia sesión como admin@stockcostanera.web
-// (eso ocurre solo al ingresar la clave de administrador en la app; no hay que crear nada a mano).
+// Administradores:
+//   1) la cuenta de respaldo admin@stockcostanera.web (clave connect2025), y
+//   2) los administradores raíz por correo (ver ROOT_ADMINS en la app), y
+//   3) cualquier usuario cuyo documento tenga rol == 'admin'.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function firmado() { return request.auth != null; }
-    function esAdmin() { return firmado() && request.auth.token.email == 'admin@stockcostanera.web'; }
+    function miCorreo() { return firmado() ? request.auth.token.email : ''; }
     function existoYo() { return firmado() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
-    function estoyAprobado() { return existoYo() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.estado == 'aprobado'; }
+    function miFicha() { return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data; }
+    // Administradores raíz por correo (coincide con ROOT_ADMINS de la app: usuario@stockcostanera.web)
+    function esRaiz() {
+      return miCorreo() == 'admin@stockcostanera.web'
+          || miCorreo() == 'miguel.aranguiz@stockcostanera.web';
+    }
+    function esAdmin() {
+      return firmado() && ( esRaiz() || (existoYo() && miFicha().rol == 'admin') );
+    }
+    function estoyAprobado() {
+      return existoYo() && (miFicha().estado == 'aprobado' || miFicha().rol == 'admin');
+    }
 
     // Usuarios
     match /usuarios/{uid} {
@@ -19,14 +32,21 @@ service cloud.firestore {
                     && request.resource.data.rol == 'user';
       // Puede leer su propia ficha; el administrador puede leer todas.
       allow read:   if firmado() && (request.auth.uid == uid || esAdmin());
-      // Solo el administrador aprueba, cambia o elimina usuarios.
-      allow update, delete: if esAdmin();
+      // El administrador elimina cualquier ficha.
+      allow delete: if esAdmin();
+      // El administrador edita todo; cada usuario puede editar SOLO su propio perfil
+      // (nombre, apellido, marca) sin tocar su estado, su rol ni su usuario.
+      allow update: if esAdmin()
+                    || ( request.auth.uid == uid
+                         && request.resource.data.estado == resource.data.estado
+                         && request.resource.data.rol == resource.data.rol
+                         && request.resource.data.username == resource.data.username );
     }
 
     // Catálogo de stock
     match /catalogo/{doc} {
-      allow read:  if estoyAprobado() || esAdmin();   // usuarios aprobados y el administrador pueden consultar
-      allow write: if esAdmin();                       // solo el administrador sube/borra stock
+      allow read:  if estoyAprobado() || esAdmin();   // usuarios aprobados y administradores pueden consultar
+      allow write: if esAdmin();                       // solo administradores suben/borran stock
     }
 
     // Inventarios (tomas). El admin ve/edita/elimina todo; cada usuario aprobado, lo suyo.

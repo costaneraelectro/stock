@@ -137,6 +137,12 @@ header{position:sticky; top:0; z-index:30; background:linear-gradient(135deg,var
 /* La configuración se abre también desde el gate (z-index:90), así que va por encima */
 #setBg{z-index:96}
 #setSheet{z-index:97}
+#profBg{z-index:96}
+#profSheet{z-index:97}
+.profhead{display:flex; align-items:center; gap:14px; margin:6px 0 14px}
+.profav{width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:24px;font-weight:900;display:grid;place-items:center;flex:0 0 auto}
+.profn{font-weight:900;font-size:18px;line-height:1.1}
+.profu{font-size:12.5px;color:var(--mut);margin-top:2px}
 .grip{width:40px; height:5px; border-radius:3px; background:var(--line); margin:9px auto 4px}
 .sheetx{position:absolute; top:10px; right:12px; width:34px; height:34px; border-radius:50%; background:var(--bg); color:var(--mut); font-size:20px; display:grid; place-items:center; z-index:2}
 .sheet .pad{padding:6px 16px 0; max-width:720px; margin:0 auto}
@@ -347,7 +353,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 
 <!-- ================= AUTH GATE ================= -->
 <div id="gate">
-  <button class="gategear" id="gateAdmin" title="Configuración">⚙️</button>
+  <button class="gategear hide" id="gateAdmin" title="Configuración">⚙️</button>
   <div class="gatehero">
     <img src="icons/icon-180.png" alt="">
     <h1>STOCK COSTANERA</h1>
@@ -385,8 +391,10 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
       <div class="htitle">STOCK COSTANERA</div>
       <div class="hspace"></div>
       <button class="iconbtn" id="btnCat" title="Catálogo videojuegos">🎮</button>
+      <button class="iconbtn" id="btnTree" title="Regalables de Electro">🎄</button>
+      <button class="iconbtn" id="btnProfile" title="Mi perfil">👤</button>
       <button class="iconbtn" id="btnDark" title="Modo oscuro">🌙</button>
-      <button class="iconbtn" id="btnSet" title="Configuración">⚙️</button>
+      <button class="iconbtn hide" id="btnSet" title="Configuración">⚙️</button>
     </div>
   </header>
 
@@ -425,6 +433,9 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 <!-- Config sheet -->
 <div class="sheet-bg" id="setBg"></div>
 <div class="sheet" id="setSheet"><div class="grip"></div><button class="sheetx" data-close="setSheet">×</button><div class="pad" id="setPad"></div></div>
+
+<div class="sheet-bg" id="profBg"></div>
+<div class="sheet" id="profSheet"><div class="grip"></div><button class="sheetx" data-close="profSheet">×</button><div class="pad" id="profPad"></div></div>
 
 <!-- Image lightbox -->
 <div class="lightbox" id="lightbox">
@@ -583,7 +594,10 @@ var FIREBASE_CONFIG={
   measurementId:"G-TVXJ0DSYEN"
 };
 var EMAIL_DOMAIN='stockcostanera.web';           // dominio interno para armar el correo desde el usuario
-var ADMIN_EMAIL='admin@stockcostanera.web';      // cuenta de administrador (se crea sola con la clave connect2025)
+var ADMIN_EMAIL='admin@stockcostanera.web';      // cuenta de administrador (respaldo, clave connect2025)
+// Administradores raíz: estos usuarios SIEMPRE son admin al entrar (sin pedir connect2025).
+// Pueden a su vez nombrar más admins desde Configuración → Usuarios.
+var ROOT_ADMINS=['miguel.aranguiz'];
 var CLOUD = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('PEGA_AQUI')<0;
 var CURRENT=null;      // usuario en sesión (local o nube)
 var REGISTERING=false; // evita carreras con el listener de sesión de Firebase
@@ -676,7 +690,7 @@ var Cloud={
     var a=await import(base+'firebase-app.js');
     var au=await import(base+'firebase-auth.js');
     var fs=await import(base+'firebase-firestore.js');
-    this.fn={createUser:au.createUserWithEmailAndPassword,signIn:au.signInWithEmailAndPassword,signOut:au.signOut,onAuth:au.onAuthStateChanged,
+    this.fn={createUser:au.createUserWithEmailAndPassword,signIn:au.signInWithEmailAndPassword,signOut:au.signOut,onAuth:au.onAuthStateChanged,updatePassword:au.updatePassword,reauth:au.reauthenticateWithCredential,credEmail:au.EmailAuthProvider&&au.EmailAuthProvider.credential,
       doc:fs.doc,getDoc:fs.getDoc,setDoc:fs.setDoc,updateDoc:fs.updateDoc,deleteDoc:fs.deleteDoc,collection:fs.collection,getDocs:fs.getDocs,writeBatch:fs.writeBatch,onSnapshot:fs.onSnapshot};
     this.app=a.initializeApp(FIREBASE_CONFIG); this.auth=au.getAuth(this.app); this.db=fs.getFirestore(this.app);
     var self=this;
@@ -686,7 +700,8 @@ var Cloud={
       if(u.email===ADMIN_EMAIL){ CURRENT={uid:u.uid,admin:true,username:'admin',nombre:'Administrador',apellido:''}; showApp(); self.subscribeCatalog(); if($('setSheet').classList.contains('show')) renderConfig(); return; }
       var me=null;
       try{ var snap=await self.fn.getDoc(self.fn.doc(self.db,'usuarios',u.uid)); me=snap.exists()?snap.data():null; }catch(e){}
-      if(me && me.estado==='aprobado'){ CURRENT=Object.assign({uid:u.uid,admin:false},me); showApp(); self.subscribeCatalog(); }
+      var adm = !!(me && (me.rol==='admin' || isRootAdmin(me)));
+      if(me && (me.estado==='aprobado' || adm)){ CURRENT=Object.assign({uid:u.uid,admin:adm},me); showApp(); self.subscribeCatalog(); if(adm && $('setSheet').classList.contains('show')) renderConfig(); }
       else { await self.fn.signOut(self.auth); CURRENT=null; showGate(); authMsg('info','Tu cuenta está pendiente de aprobación por el administrador.'); }
     });
   },
@@ -737,6 +752,16 @@ var Cloud={
   async approve(id){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),{estado:'aprobado'}); },
   async remove(id){ await this.fn.deleteDoc(this.fn.doc(this.db,'usuarios',id)); },
   async setInv(id,val){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),{inv:!!val}); },
+  async setRol(id,val){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),{rol:val?'admin':'user'}); },
+  async updateProfile(id,patch){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),patch); },
+  async changePassword(oldPass,newPass){
+    var u=this.auth.currentUser; if(!u) return {ok:false,msg:'No hay sesión.'};
+    try{ if(this.fn.credEmail && oldPass){ var cr=this.fn.credEmail(u.email,oldPass); await this.fn.reauth(u,cr); }
+      await this.fn.updatePassword(u,newPass); return {ok:true}; }
+    catch(e){ var c=(e&&e.code)||''; if(/wrong-password|invalid-credential/.test(c)) return {ok:false,msg:'La clave actual no es correcta.'};
+      if(/weak-password/.test(c)) return {ok:false,msg:'La nueva clave debe tener al menos 6 caracteres.'};
+      if(/requires-recent-login/.test(c)) return {ok:false,msg:'Vuelve a iniciar sesión e inténtalo de nuevo.'};
+      return {ok:false,msg:this.mapErr(e)}; } },
   async saveInv(id,data){ await this.fn.setDoc(this.fn.doc(this.db,'inventarios',id),data,{merge:true}); },
   async listInv(){ var out=[]; var snap=await this.fn.getDocs(this.fn.collection(this.db,'inventarios')); snap.forEach(function(d){ out.push(Object.assign({id:d.id},d.data())); }); out.sort(function(a,b){return (b.updatedMs||0)-(a.updatedMs||0);}); return out; },
   async updInv(id,patch){ await this.fn.updateDoc(this.fn.doc(this.db,'inventarios',id),patch); },
@@ -782,7 +807,8 @@ var Cloud={
 };
 
 /* ===== Dispatchers (nube o local) ===== */
-function isAdmin(){ return !!(CURRENT&&CURRENT.admin); }
+function isRootAdmin(u){ return !!(u && u.username && ROOT_ADMINS.indexOf((u.username||'').toLowerCase())>=0); }
+function isAdmin(){ return !!(CURRENT && (CURRENT.admin || CURRENT.rol==='admin' || isRootAdmin(CURRENT))); }
 async function adminUnlock(key){
   if(CLOUD){ var r=await Cloud.adminLogin(key); return r; }
   if(key===ADMIN_KEY){ CURRENT={admin:true,username:'admin',nombre:'Administrador',apellido:''}; SETUNLOCKED=true; showApp(); return {ok:true}; }
@@ -1091,8 +1117,61 @@ function openDetail(sku){
 }
 
 /* ===== Sheets ===== */
-function openSheet(id){ $(id).classList.add('show'); $(id==='sheet'?'sheetBg':'setBg').classList.add('show'); }
-function closeSheet(id){ $(id).classList.remove('show'); $(id==='sheet'?'sheetBg':'setBg').classList.remove('show'); }
+function sheetBgId(id){ return id==='sheet'?'sheetBg':(id==='profSheet'?'profBg':'setBg'); }
+function openSheet(id){ $(id).classList.add('show'); $(sheetBgId(id)).classList.add('show'); }
+function closeSheet(id){ $(id).classList.remove('show'); $(sheetBgId(id)).classList.remove('show'); }
+function openTree(){ toast('🎄 Regalables: próximamente'); }
+/* ===== Perfil del usuario ===== */
+function openProfile(){ renderProfile(); openSheet('profSheet'); }
+function renderProfile(){
+  var cu=CURRENT||{}; var pad=$('profPad'); var admin=isAdmin();
+  var marcas=distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},null);
+  var h='';
+  h+='<div class="dtitle">Mi perfil</div>';
+  h+='<div class="profhead"><div class="profav">'+esc(((cu.nombre||'?')[0]||'?').toUpperCase())+'</div>'+
+     '<div><div class="profn">'+esc(((cu.nombre||'')+' '+(cu.apellido||'')).trim()||'Usuario')+'</div>'+
+     '<div class="profu">@'+esc(cu.username||'')+(admin?' · <b style="color:var(--ok)">Administrador</b>':'')+'</div></div></div>';
+  h+='<div id="profMsg"></div>';
+  h+='<div class="sec"><h4>Datos</h4>';
+  h+='<div class="field"><label>Nombre</label><input id="pfNombre" value="'+esc(cu.nombre||'')+'" autocomplete="off"></div>';
+  h+='<div class="field"><label>Apellido</label><input id="pfApellido" value="'+esc(cu.apellido||'')+'" autocomplete="off"></div>';
+  h+='<div class="field"><label>Usuario (no se puede cambiar)</label><input value="'+esc(cu.username||'')+'" disabled style="opacity:.6"></div>';
+  h+='<div class="field"><label>Marca que atiendes</label><select id="pfMarca"><option value="">— Sin marca —</option>'+
+     marcas.map(function(m){return '<option value="'+esc(m.name||m.code)+'"'+(((cu.marca||'')===(m.name||m.code))?' selected':'')+'>'+esc(m.name||m.code)+'</option>';}).join('')+
+     (cu.marca&&!marcas.some(function(m){return (m.name||m.code)===cu.marca;})?'<option value="'+esc(cu.marca)+'" selected>'+esc(cu.marca)+'</option>':'')+'</select></div>';
+  h+='<button class="btn primary" id="pfSave" style="width:100%;margin-top:4px">Guardar cambios</button></div>';
+  h+='<div class="sec"><h4>Cambiar contraseña</h4>';
+  if(CLOUD) h+='<div class="field"><label>Clave actual</label><input id="pfOld" type="password" autocomplete="off" placeholder="••••••"></div>';
+  h+='<div class="field"><label>Clave nueva</label><input id="pfNew" type="password" autocomplete="off" placeholder="mín. '+(CLOUD?6:4)+' caracteres"></div>';
+  h+='<div class="field"><label>Repetir clave nueva</label><input id="pfNew2" type="password" autocomplete="off"></div>';
+  h+='<button class="btn" id="pfPass" style="width:100%">Actualizar contraseña</button></div>';
+  h+='<div class="sec"><button class="btn ghost" id="pfLogout" style="width:100%">Cerrar sesión</button></div>';
+  pad.innerHTML=h;
+  $('pfSave').onclick=profileSave;
+  $('pfPass').onclick=profileChangePass;
+  $('pfLogout').onclick=function(){ closeSheet('profSheet'); logout(); };
+}
+function profMsg(kind,txt){ var m=$('profMsg'); if(m) m.innerHTML='<div class="msg '+kind+'">'+txt+'</div>'; }
+async function profileSave(){
+  var nombre=$('pfNombre').value.trim(), apellido=$('pfApellido').value.trim(), marca=$('pfMarca').value;
+  if(nombre.length<2||apellido.length<2){ profMsg('err','Ingresa nombre y apellido.'); return; }
+  profMsg('info','<span class="spin"></span> Guardando…');
+  try{
+    if(CLOUD){ await Cloud.updateProfile(CURRENT.uid,{nombre:nombre,apellido:apellido,marca:marca}); }
+    else { var us=getUsers(); var u=us.find(function(x){return x.username===CURRENT.username;}); if(u){u.nombre=nombre;u.apellido=apellido;u.marca=marca;saveUsers(us);} }
+    CURRENT.nombre=nombre; CURRENT.apellido=apellido; CURRENT.marca=marca;
+    profMsg('ok','✓ Perfil actualizado.'); renderProfile();
+  }catch(e){ profMsg('err','No se pudo guardar'+(CLOUD?' (revisa permisos de Firestore).':'.')); }
+}
+async function profileChangePass(){
+  var nw=$('pfNew').value, nw2=$('pfNew2').value, old=CLOUD?($('pfOld').value||''):'';
+  var min=CLOUD?6:4;
+  if(nw.length<min){ profMsg('err','La clave nueva debe tener al menos '+min+' caracteres.'); return; }
+  if(nw!==nw2){ profMsg('err','Las claves nuevas no coinciden.'); return; }
+  profMsg('info','<span class="spin"></span> Actualizando…');
+  if(CLOUD){ var r=await Cloud.changePassword(old,nw); if(r.ok){ profMsg('ok','✓ Contraseña actualizada.'); $('pfNew').value='';$('pfNew2').value='';$('pfOld').value=''; } else profMsg('err',esc(r.msg||'No se pudo.')); }
+  else { var us=getUsers(); var u=us.find(function(x){return x.username===CURRENT.username;}); if(u){ u.hash=await hashPass(nw); saveUsers(us); profMsg('ok','✓ Contraseña actualizada.'); $('pfNew').value='';$('pfNew2').value=''; } else profMsg('err','No se encontró el usuario.'); }
+}
 
 /* ===== Tema / color ===== */
 function applyAccent(idx){ var p=PALETTE[idx]||PALETTE[0]; var r=document.documentElement.style;
@@ -1180,6 +1259,7 @@ async function populateUsers(){
   box.innerHTML=h;
   Array.prototype.forEach.call(box.querySelectorAll('[data-appr]'),function(b){b.onclick=function(){approveDispatch(b.getAttribute('data-appr'));};});
   Array.prototype.forEach.call(box.querySelectorAll('[data-inv]'),function(b){b.onclick=function(){ invDispatch(b.getAttribute('data-inv'), b.getAttribute('data-on')!=='1'); };});
+  Array.prototype.forEach.call(box.querySelectorAll('[data-rol]'),function(b){b.onclick=function(){ rolDispatch(b.getAttribute('data-rol'), b.getAttribute('data-on')!=='1'); };});
   Array.prototype.forEach.call(box.querySelectorAll('[data-del]'),function(b){b.onclick=function(){ if(confirm('¿Eliminar a este usuario?')) deleteDispatch(b.getAttribute('data-del')); };});
 }
 function userRowHTML(u,pending){
@@ -1188,10 +1268,11 @@ function userRowHTML(u,pending){
   var fch=u.createdAt?new Date(u.createdAt).toLocaleDateString('es-CL'):'';
   return '<div class="userrow"><div class="uav">'+esc(ini)+'</div>'+
     '<div class="uinfo"><div class="un">'+esc((u.nombre||'')+' '+(u.apellido||''))+' '+(pending?'<span class="tagp">Pendiente</span>':'<span class="taga">Aprobado</span>')+(u.rol==='admin'?' <span class="taga">Admin</span>':'')+(u.inv?' <span class="tagi">Inventario</span>':'')+'</div>'+
-    '<div class="us">'+esc(u.username||'')+(fch?' · '+fch:'')+'</div></div>'+
+    '<div class="us">'+esc(u.username||'')+(u.marca?' · '+esc(u.marca):'')+(fch?' · '+fch:'')+'</div></div>'+
     '<div class="uacts">'+
       (pending?'<button class="minibtn bc" data-appr="'+esc(id)+'">✓ Aprobar</button>'
-             :'<button class="minibtn'+(u.inv?' inv':'')+'" data-inv="'+esc(id)+'" data-on="'+(u.inv?1:0)+'">'+(u.inv?'✓ Inventario':'+ Inventario')+'</button>')+
+             :'<button class="minibtn'+(u.inv?' inv':'')+'" data-inv="'+esc(id)+'" data-on="'+(u.inv?1:0)+'">'+(u.inv?'✓ Inventario':'+ Inventario')+'</button>'+
+               '<button class="minibtn'+(u.rol==='admin'?' inv':'')+'" data-rol="'+esc(id)+'" data-on="'+(u.rol==='admin'?1:0)+'">'+(u.rol==='admin'?'✓ Admin':'+ Admin')+'</button>')+
       '<button class="minibtn" data-del="'+esc(id)+'">✕</button></div></div>';
 }
 async function approveDispatch(id){
@@ -1207,6 +1288,12 @@ async function deleteDispatch(id){
 async function invDispatch(id,val){
   try{ if(CLOUD) await Cloud.setInv(id,val); else { var us=getUsers(); var u=us.find(function(x){return x.username===id;}); if(u){u.inv=!!val;saveUsers(us);} }
     toast(val?'Perfil inventario activado':'Perfil inventario quitado'); populateUsers();
+  }catch(e){ toast('No se pudo cambiar (¿permisos de administrador?)'); }
+}
+async function rolDispatch(id,val){
+  if(val && !confirm('¿Hacer administrador a este usuario? Podrá subir stock y gestionar usuarios.')) return;
+  try{ if(CLOUD) await Cloud.setRol(id,val); else { var us=getUsers(); var u=us.find(function(x){return x.username===id;}); if(u){u.rol=val?'admin':'user';saveUsers(us);} }
+    toast(val?'Ahora es administrador':'Ya no es administrador'); populateUsers();
   }catch(e){ toast('No se pudo cambiar (¿permisos de administrador?)'); }
 }
 
@@ -1235,7 +1322,7 @@ function closeScanner(){ scanState.running=false; INV.scanRoute=false; cancelAni
   if(scanState.stream){scanState.stream.getTracks().forEach(function(t){t.stop();});scanState.stream=null;} $('scan').classList.remove('show'); }
 
 /* ===== Gate / navegación ===== */
-function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; $('btnInv').classList.toggle('hide', !canInv()); buildFilters(); render(); updateBanner(); }
+function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; $('btnInv').classList.toggle('hide', !canInv()); $('btnSet').classList.toggle('hide', !isAdmin()); buildFilters(); render(); updateBanner(); }
 function showGate(){ $('app').hidden=true; $('gate').classList.remove('hide'); switchTab('login'); $('lgUser').value=''; $('lgPass').value=''; }
 function switchTab(which){
   var lg=which==='login';
@@ -1705,12 +1792,18 @@ function init(){
       authMsg('ok','✓ Registro enviado. Tu usuario es <b>'+esc(r.username)+'</b>. Un administrador debe aprobarlo en Configuración antes de que puedas ingresar.'); }
     else authMsg('err',esc(r.msg)); });
   $('gateAdmin').onclick=openConfig;
+  // Bootstrap admin oculto: mantén presionado el logo del gate 2s (respaldo connect2025)
+  (function(){ var logo=document.querySelector('#gate .glogo, #gate .gatelogo, #gate .logo, #gate img'); if(!logo)return; var t=null;
+    var start=function(){ t=setTimeout(openConfig,1500); }; var end=function(){ clearTimeout(t); };
+    logo.addEventListener('touchstart',start,{passive:true}); logo.addEventListener('touchend',end); logo.addEventListener('mousedown',start); logo.addEventListener('mouseup',end); logo.addEventListener('mouseleave',end); })();
 
   // App header
   $('btnDark').onclick=toggleDark;
   $('btnCat').onclick=openCatalog;
   $('catClose').onclick=closeCatalog;
   $('catSearch').addEventListener('input',function(){ renderCatalog(this.value); });
+  $('btnProfile').onclick=openProfile;
+  $('btnTree').onclick=openTree;
   $('btnSet').onclick=openConfig;
   $('btnScan').onclick=openScanner;
   $('scanClose').onclick=closeScanner;
@@ -1756,6 +1849,7 @@ function init(){
   // Overlays
   $('sheetBg').onclick=function(){closeSheet('sheet');};
   $('setBg').onclick=function(){closeSheet('setSheet');};
+  $('profBg').onclick=function(){closeSheet('profSheet');};
   Array.prototype.forEach.call(document.querySelectorAll('[data-close]'),function(b){b.onclick=function(){closeSheet(b.getAttribute('data-close'));};});
   $('lbClose').onclick=closeImage; $('lightbox').onclick=function(e){ if(e.target===$('lightbox'))closeImage(); };
   $('bcClose').onclick=function(){$('bcwrap').classList.remove('show');}; $('bcwrap').onclick=function(e){ if(e.target===$('bcwrap'))$('bcwrap').classList.remove('show'); };
