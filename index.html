@@ -294,6 +294,35 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .catcard .cc{font-size:10px; color:var(--mut); line-height:1.4; word-break:break-all}
 .catcard .cp{margin-top:auto; font-weight:900; font-size:19px; color:var(--accent-ink); background:var(--accent); display:inline-block; padding:4px 10px; border-radius:9px; align-self:flex-start}
 [data-theme="dark"] .catcard .ph{background:#f4f5f7}
+/* ===== Pino de Navidad (regalables) ===== */
+#tree{position:fixed; inset:0; z-index:86; background:var(--bg); color:var(--ink); display:none; flex-direction:column}
+#tree.show{display:flex}
+#tree .treehead{display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 12px) 14px 10px; background:linear-gradient(135deg,#0f8a3d,#b4151c); color:#fff; box-shadow:var(--shadow)}
+#tree .ct{font-weight:900; font-size:17px; line-height:1.05; flex:1}
+#tree .ct small{display:block; font-weight:700; font-size:11px; opacity:.9}
+#tree .catx{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.2);color:#fff;font-size:20px;display:grid;place-items:center;flex:0 0 auto}
+#tree .treebar{padding:10px 14px; background:var(--card); box-shadow:var(--shadow)}
+#tree .treebar input{width:100%; padding:11px 12px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:15px}
+.treechips{display:flex; gap:7px; overflow-x:auto; margin-top:9px; padding-bottom:2px; -webkit-overflow-scrolling:touch}
+.treechip{flex:0 0 auto; padding:7px 13px; border-radius:999px; font-weight:800; font-size:12.5px; background:var(--bg); color:var(--mut); border:1px solid var(--line); white-space:nowrap}
+.treechip.on{background:#0f8a3d; color:#fff; border-color:#0f8a3d}
+.treesel{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:9px}
+.treesel select{width:100%; padding:9px 7px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:12.5px}
+.treecard{background:var(--card); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; border:1px solid var(--line)}
+.treecard .ph{position:relative; aspect-ratio:1/1; background:#fff; display:grid; place-items:center; cursor:pointer}
+.treecard .ph img{width:100%; height:100%; object-fit:contain}
+.treecard .ph .noimg{color:#9aa3b2; font-size:30px}
+.treecard .ph .stk{position:absolute; top:8px; left:8px; color:#fff; font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px}
+.treecard .ph .stk.has{background:#0f8a3d} .treecard .ph .stk.no{background:#b4151c}
+.treecard .ph .mueble{position:absolute; bottom:8px; right:8px; width:46px; height:46px; border-radius:9px; object-fit:cover; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.3); background:#fff; cursor:pointer}
+.treecard .ci{padding:10px 11px 12px; display:flex; flex-direction:column; gap:4px; flex:1}
+.treecard .cn{font-weight:800; font-size:13px; line-height:1.25; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; min-height:2.4em}
+.treecard .cm{font-size:10.5px; color:var(--mut); font-weight:800; text-transform:uppercase; letter-spacing:.2px}
+.treecard .tags{display:flex; flex-wrap:wrap; gap:4px; margin-top:2px}
+.treecard .tg{font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:999px; background:var(--bg); border:1px solid var(--line); color:var(--mut)}
+.treecard .tg.f{background:#0f8a3d1a; color:#0f8a3d; border-color:#0f8a3d44}
+.treecard .cc{font-size:9.5px; color:var(--mut); line-height:1.35; word-break:break-all; margin-top:2px}
+[data-theme="dark"] .treecard .ph{background:#f4f5f7}
 .invhead{display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow)}
 .invhead .t{font-weight:900; flex:1; font-size:17px; line-height:1.1}
 .invhead .t small{display:block; font-weight:700; font-size:11px; opacity:.8}
@@ -479,6 +508,24 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
   <div class="catbody"><div id="catGrid"></div></div>
 </div>
 
+<!-- Pino de Navidad · Regalables de Electro -->
+<div id="tree">
+  <div class="treehead">
+    <div class="ct">🎄 Regalables Electro<small id="treeSub">—</small></div>
+    <button class="catx" id="treeClose">×</button>
+  </div>
+  <div class="treebar">
+    <input id="treeSearch" autocomplete="off" placeholder="🔍 Buscar producto, marca o SKU">
+    <div class="treechips" id="treeChips"></div>
+    <div class="treesel">
+      <select id="treeFormato"></select>
+      <select id="treeUbic"></select>
+      <select id="treeMarca"></select>
+    </div>
+  </div>
+  <div class="catbody"><div id="treeGrid"></div></div>
+</div>
+
 <!-- Scanner -->
 <div id="scan">
   <video id="video" playsinline muted></video>
@@ -575,6 +622,7 @@ var K={DATA:'stk-data',META:'stk-meta',ACCENT:'stk-accent',THEME:'stk-theme',LOW
 var RAWTEXT='';   // texto CRUDO del archivo (para reconstruir CSV formato original)
 var ADMIN_KEY='connect2025';
 var PRODUCTS=[], META={fecha:null,archivo:null,filas:0};
+var REGALABLES=[{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11","m":"SLEVE","d":"AUDIFONOS PRO FIT BLACK","s":["80814707","80814711"],"img":"m11.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11","m":"XIAOMI","d":"PARLANTE","s":["80828223","80828224"],"img":"m11.jpg"},{"f":"PINO CAJAS MARCA","u":"PASILLO","w":"J11","m":"HONOR","d":"TABLET X7B 9,7\" 4GB 128GB + COVER","s":["80865679"],"img":"m05.jpg"},{"f":"PINO CAJAS MARCA","u":"PASILLO","w":"J11","m":"LENOVO","d":"TABLET PLUS  12\" 8GB 256GB + KEYBOARD COVER + LAPIZ","s":["80668316"],"img":"m07.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HONOR","d":"SMART TAG","s":["80748219"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"PRIMUS","d":"CONTROL GAMER CELULAR","s":["80862612"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HP","d":"COMBO HP 2X","s":["80862755"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"BLIK","d":"BUDS AIR500 | AUDIFONOS SOUL900","s":["80767932","80767933","80505631","17240372","17431416"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"HUAWEI","d":"BUDS","s":["80752400","80752399"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"SLEVE","d":"PARLANTE + AUDIFONO (PACK ONE BOOM) | AUDIFONO AIRE ONE BLACK","s":["80814709","80814710","80814712","80814708"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"PHILIPS","d":"KARAOKE PORTATIL","s":["17251306"],"img":"m12.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"LENOVO","d":"TABLET PLUS  12\" 8GB 256GB + KEYBOARD COVER + LAPIZ","s":["80668316"],"img":"m01.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"MARSHALL","d":"PARLANTE","s":["80757805","17450989"],"img":"m02.jpg"},{"f":"TOTEM GLORIFICADOR","u":"PASILLO","w":"J11","m":"BOSE","d":"PARLANTE","s":["80763895"],"img":"m03.jpg"},{"f":"TOTEM MARCA","u":"PASILLO","w":"J11","m":"LOGITECH","d":"SIMULADOR","s":["15567055"],"img":"m04.jpg"},{"f":"TOTEM MARCA","u":"PASILLO","w":"J11","m":"REDRAGON","d":"SIMULADOR REDRAGON","s":["80863561"],"img":"m04.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"BLIK","d":"PARLANTE BLIK-BASSGO | PARLANTE BLIK-POWERBASS30","s":["80767926","80767929","80767927","80767930","80614153","80767319","80767321","80767320","80767322"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11","m":"KLIPXTREME","d":"BUDS","s":["80728591","80728592"],"img":"m12.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J01","m":"AMAZON","d":"ALEXA","s":["153874952"],"img":"m11.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"XTECH","d":"ANTEOJOS","s":["80863744"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"HYPERX","d":"COMBO HYPERX 2X","s":["80862752","80862756"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"SLEVE","d":"POWER BANK 10.000","s":["80862855","80862857","80862856","80862858","80862854"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J02","m":"BLIK","d":"PACK BUDS + PARLANTE","s":["17471271","17471273","80768085","80768086","80768087"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"HUAWEI","d":"SMART WATCH","s":["17387969","17387970"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"SAMSUNG","d":"SMART WATCH","s":["17032337","17032338","17032339"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"XIAOMI","d":"SMARTBAND 11 ACTIVE | REDMI WATCH 6 ACTIVE| REDMI BUDS 6","s":["17764877","17764878","17764879","17284712","17365410","17284711","80528728","17764873","17764875","17764876"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J03","m":"HONOR","d":"BUDS Y SMART WATCH","s":["17363781","17441649"],"img":"m12.jpg"},{"f":"TOTEM GLORIFICADOR + MESA","u":"PASILLO","w":"J11 | J03","m":"GARMIN","d":"SMART WATCH","s":["17363751","17363752"],"img":"m06.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J05","m":"KODAK","d":"CAMARA \"KODAK\"","s":["80870573","80870574","80870575"],"img":"m11.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"XTECH","d":"CORREA STRAP CELULAR CARGADOR","s":["80863745","80863746","80863747"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"MASTER G","d":"BATERIA","s":["80863571","80863572","80863574","80863577","80863575","80863573","80863576"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"JBL","d":"AUDIFONOS TWS WAVE FLEX | PARLANTE CLIP","s":["80865421","80865423","80865419","17188061","17188062","80611367","80865420","17188063"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SLEVE","d":"PARLANTE BOOM MINI PAISAJES CHILENOS","s":["80814692","80814695","80814697","80814699","80814700"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SLEVE","d":"BUDS PURE X","s":["80814693","80814694","80814696","80814698","80814701"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J05","m":"SONY","d":"AUDIFONOS BLUETOOTH","s":["16813218","17290780","16813219","17429405","16813221","17431421"],"img":"m12.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J05 | J01","m":"DDESIGN","d":"VENTILADOR","s":["883993619","883993623","883993621"],"img":"m11.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J09","m":"PLAYSTATION","d":"CONTROL DUALSENSE PLAYSTATION","s":["14557291","15418171"],"img":"m11.jpg"},{"f":"CANASTO","u":"PASILLO - BARANDA","w":"J11 | J09","m":"POKU","d":"SMART WATCH INFANTIL","s":["883997617","883997621"],"img":"m11.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J09","m":"REDRAGON","d":"CONTROL ALTERNATIVO PS5","s":["80863563"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J11 | J09","m":"KLIPXTREME","d":"KARAOKE Y HEAD SET","s":["80736971","80736970","80736969","80865424","80865425"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J09","m":"RECCO","d":"MINI WAFFLERA ELÉCTRICA","s":["881971893","881985227","881985225"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J09","m":"RECCO","d":"MÁQUINA DE HELADO","s":["883579355","883579349","883579357"],"img":"m12.jpg"},{"f":"MESA ULA","u":"CUIDADO PERSONAL","w":"J1109","m":"ULA","d":"MULTISTYLER ULA EVOLUTION - CEPILLO ULA AIRFLOW 4 EN 1","s":["883930252","883930250"],"img":"m08.jpg"},{"f":"CRUCETA PERFUMERIA","u":"PASILLO","w":"J1109","m":"ULA","d":"ONDULADOR ULA AUTOCURL HALO","s":["883930254"],"img":"m09.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109","m":"PHILIPS","d":"AFEITADORA ONE BLADE","s":["16746420"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109","m":"SIEGEN","d":"SECADOR TRAVEL","s":["80872534","80872533","80872532"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J01","m":"YOON","d":"AFEITADORA METALICA PORTATIL","s":["883937594","883937598","883937576","883937590"],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J06","m":"PHILIPS","d":"PACK DEPILADORA FACIAL Y CREMA","s":[],"img":"m12.jpg"},{"f":"RTD","u":"PASILLO - BARANDA","w":"J1109 | J06","m":"YOON","d":"DEPILADORA FACIAL","s":["883937574"],"img":"m12.jpg"},{"f":"MESA MADERA EVENTOS | DECO","u":"BARANDA ESCALA","w":"J15","m":"RECCO","d":"MÁQUINA DE WAFFLES - MÁQUINA DE CREPES - MÁQUINA DE DONUTS - CÁSCADA DE CHOCOLATE - MÁQUINA DE ALGODÓN DE AZUCAR - MÁQUINA DE POPCORN","s":["883403524","883450752","883450744","883597666","883540165","883540163"],"img":"m10.jpg"}];  // regalables Electro (grilla); stock se sincroniza por SKU
 var FILT={q:'',linea:'',sub:'',clase:'',subc:'',marca:'',low:false};
 var SETUNLOCKED=false; // configuración desbloqueada en esta apertura
 
@@ -1033,6 +1081,11 @@ function openImage(sku,name){
   img.onerror=function(){ img.onerror=null; img.src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="220"><rect width="300" height="220" fill="#e5e7eb"/><text x="150" y="105" font-size="18" text-anchor="middle" fill="#6b7280">Imagen no disponible</text><text x="150" y="132" font-size="13" text-anchor="middle" fill="#9aa4b2">SKU '+esc(sku)+'</text></svg>'); img.style.opacity='1'; };
   img.src=imgUrl(sku); $('lightbox').classList.add('show');
 }
+function openImageSrc(src,cap,sub){
+  $('lbCap').textContent=cap||''; $('lbSku').textContent=sub||'';
+  var img=$('lbImg'); img.style.opacity='.3'; img.onload=function(){img.style.opacity='1';}; img.onerror=null;
+  img.src=src; $('lightbox').classList.add('show');
+}
 function closeImage(){ $('lightbox').classList.remove('show'); $('lbImg').src=''; }
 
 /* ===== Catálogo tipo revista (videojuegos) ===== */
@@ -1120,7 +1173,67 @@ function openDetail(sku){
 function sheetBgId(id){ return id==='sheet'?'sheetBg':(id==='profSheet'?'profBg':'setBg'); }
 function openSheet(id){ $(id).classList.add('show'); $(sheetBgId(id)).classList.add('show'); }
 function closeSheet(id){ $(id).classList.remove('show'); $(sheetBgId(id)).classList.remove('show'); }
-function openTree(){ toast('🎄 Regalables: próximamente'); }
+/* ===== Pino de Navidad · Regalables ===== */
+var treeF={formato:'',ubic:'',marca:'',stock:'all',q:''};
+function regStock(r){ var t=0,found=false; (r.s||[]).forEach(function(sku){ var p=findBySku(sku); if(p){ found=true; t+=p.stock; } }); return {stock:t,found:found}; }
+function regProd(r){ for(var i=0;i<(r.s||[]).length;i++){ var p=findBySku(r.s[i]); if(p) return p; } return null; }
+function treePass(r,ex){
+  if(ex!=='formato' && treeF.formato && r.f!==treeF.formato) return false;
+  if(ex!=='ubic' && treeF.ubic && r.u!==treeF.ubic) return false;
+  if(ex!=='marca' && treeF.marca && up(r.m)!==up(treeF.marca)) return false;
+  return true;
+}
+function treeDistinct(getv,ex){ var seen={},out=[]; REGALABLES.forEach(function(r){ if(!treePass(r,ex))return; var v=getv(r); if(v&&!seen[up(v)]){seen[up(v)]=1;out.push(v);} }); out.sort(function(a,b){return String(a).localeCompare(String(b),'es');}); return out; }
+function openTree(){ treeF={formato:'',ubic:'',marca:'',stock:'all',q:''}; $('treeSearch').value=''; $('tree').classList.add('show'); renderTree(); setTimeout(function(){ try{$('treeSearch').focus();}catch(e){} },150); }
+function closeTree(){ $('tree').classList.remove('show'); }
+function treeList(){
+  var q=up(treeF.q||'').trim(), qd=(treeF.q||'').replace(/\D/g,'');
+  return REGALABLES.filter(function(r){
+    if(!treePass(r,'')) return false;
+    var st=regStock(r);
+    if(treeF.stock==='con' && !(st.stock>0)) return false;
+    if(treeF.stock==='sin' && st.stock>0) return false;
+    if(q||qd){ var hit=q&&(up(r.d).indexOf(q)>=0||up(r.m).indexOf(q)>=0||up(r.f).indexOf(q)>=0);
+      if(!hit&&qd) hit=(r.s||[]).some(function(s){return s.indexOf(qd)>=0;});
+      if(!hit) return false; }
+    return true;
+  });
+}
+function renderTree(){
+  // selects progresivos
+  var fsel=function(id,getv,ex,cur,all){ var opts=treeDistinct(getv,ex); $(id).innerHTML='<option value="">'+all+'</option>'+opts.map(function(v){return '<option value="'+esc(v)+'"'+(up(v)===up(cur)?' selected':'')+'>'+esc(v)+'</option>';}).join(''); if(cur&&!opts.some(function(v){return up(v)===up(cur);}))$(id).value=''; };
+  fsel('treeFormato',function(r){return r.f;},'formato',treeF.formato,'Todo formato');
+  fsel('treeUbic',function(r){return r.u;},'ubic',treeF.ubic,'Toda ubicación');
+  fsel('treeMarca',function(r){return r.m;},'marca',treeF.marca,'Toda marca');
+  // chips de stock
+  var chips=[['all','🎁 Todos'],['con','✅ Con stock'],['sin','⛔ Sin stock']];
+  $('treeChips').innerHTML=chips.map(function(c){return '<button class="treechip'+(treeF.stock===c[0]?' on':'')+'" data-stk="'+c[0]+'">'+c[1]+'</button>';}).join('');
+  Array.prototype.forEach.call($('treeChips').querySelectorAll('[data-stk]'),function(b){ b.onclick=function(){ treeF.stock=b.getAttribute('data-stk'); renderTree(); }; });
+  var list=treeList();
+  var conStock=REGALABLES.filter(function(r){return regStock(r).stock>0;}).length;
+  $('treeSub').textContent=list.length+' de '+REGALABLES.length+' regalables'+(PRODUCTS.length?' · '+conStock+' con stock hoy':' · sube el stock para ver unidades');
+  var grid=$('treeGrid');
+  if(!list.length){ grid.className=''; grid.innerHTML='<div style="color:var(--mut);font-size:14px;padding:24px 4px;text-align:center">Sin resultados con estos filtros.</div>'; }
+  else{
+    grid.className='catgrid';
+    grid.innerHTML=list.map(function(r){ var st=regStock(r); var p=regProd(r); var sku=(r.s&&r.s[0])||''; var nm=r.d||(p&&p.desc)||'Regalable';
+      var badge=!PRODUCTS.length?'<span class="stk has">🎁</span>':(st.stock>0?'<span class="stk has">'+st.stock+' u.</span>':'<span class="stk no">Agotado</span>');
+      var img=sku?'<img loading="lazy" src="'+esc(imgUrl(sku))+'" alt="" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<div class=\\\'noimg\\\'>🎁</div>\')">':'<div class="noimg">🎁</div>';
+      var mueble=r.img?'<img class="mueble" loading="lazy" src="regalables/'+esc(r.img)+'" data-mueble="regalables/'+esc(r.img)+'" data-mcap="'+esc(r.f)+'" alt="mueble">':'';
+      return '<div class="treecard"><div class="ph" data-img="'+esc(sku)+'" data-nm="'+esc(nm)+'">'+img+badge+mueble+'</div>'+
+        '<div class="ci"><div class="cn">'+esc(nm)+'</div>'+
+        '<div class="cm">'+esc(brandDisplay(r.m)||r.m)+'</div>'+
+        '<div class="tags"><span class="tg f">📦 '+esc(r.f||'—')+'</span><span class="tg">📍 '+esc(r.u||'—')+'</span>'+(r.w?'<span class="tg">'+esc(r.w)+'</span>':'')+'</div>'+
+        '<div class="cc">SKU '+esc((r.s||[]).join(' · ')||'—')+'</div></div></div>';
+    }).join('');
+    Array.prototype.forEach.call(grid.querySelectorAll('[data-img]'),function(b){ b.onclick=function(){ var s=b.getAttribute('data-img'); if(s) openImage(s,b.getAttribute('data-nm')); }; });
+    Array.prototype.forEach.call(grid.querySelectorAll('[data-mueble]'),function(b){ b.onclick=function(e){ e.stopPropagation(); openImageSrc(b.getAttribute('data-mueble'), b.getAttribute('data-mcap')||'Mueble', 'Dónde se exhibe'); }; });
+  }
+  $('treeFormato').onchange=function(){ treeF.formato=this.value; renderTree(); };
+  $('treeUbic').onchange=function(){ treeF.ubic=this.value; renderTree(); };
+  $('treeMarca').onchange=function(){ treeF.marca=this.value; renderTree(); };
+  var ts=$('treeSearch'); ts.oninput=function(){ treeF.q=this.value; renderTree(); var e=$('treeSearch'); if(e){var v=e.value;e.value='';e.value=v;} };
+}
 /* ===== Perfil del usuario ===== */
 function openProfile(){ renderProfile(); openSheet('profSheet'); }
 function renderProfile(){
@@ -1804,6 +1917,7 @@ function init(){
   $('catSearch').addEventListener('input',function(){ renderCatalog(this.value); });
   $('btnProfile').onclick=openProfile;
   $('btnTree').onclick=openTree;
+  $('treeClose').onclick=closeTree;
   $('btnSet').onclick=openConfig;
   $('btnScan').onclick=openScanner;
   $('scanClose').onclick=closeScanner;
