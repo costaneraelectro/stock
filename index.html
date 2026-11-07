@@ -192,7 +192,7 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .bccard .bcx{margin-top:14px; background:#12151b; color:#fff; padding:10px 18px; border-radius:11px; font-weight:800}
 
 /* Scanner */
-#scan{position:fixed; inset:0; z-index:60; background:#000; display:none; flex-direction:column}
+#scan{position:fixed; inset:0; z-index:95; background:#000; display:none; flex-direction:column}
 #scan.show{display:flex}
 #scan video{width:100%; height:100%; object-fit:cover; position:absolute; inset:0}
 .scanmask{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none}
@@ -296,6 +296,8 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
 .invcard{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:12px}
 .invcard h4{margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--mut)}
 .invscope{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.invscope label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.3px; color:var(--mut); font-weight:800; margin:0 0 3px 2px}
+.invscope select{width:100%; padding:11px 10px; font-size:15px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
 .invscope input{width:100%; padding:12px; font-size:16px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
 .invkpis{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px}
 .invkpi{background:var(--bg); border-radius:12px; padding:10px; text-align:center}
@@ -498,15 +500,16 @@ table.stk tr:nth-child(even) td{background:#fafbfc}
           <button class="minibtn bc" id="iNew">+ Nuevo</button></div>
         <div id="iHistList"><div style="color:var(--mut);font-size:13px">Sin inventarios aún.</div></div>
       </div>
-      <div class="invcard">
-        <h4>Alcance (qué vas a tomar)</h4>
+      <div class="invcard" id="iScopeCard">
+        <h4>1 · ¿Qué vas a tomar?</h4>
+        <p style="color:var(--mut);font-size:12px;margin:0 0 10px">Elige una o varias. Déjalas en "Todas" para tomar todo. Ejemplo: solo Marca = Apple.</p>
         <div class="invscope">
-          <input id="iSub" list="idlSub" placeholder="Todas las sublíneas" autocomplete="off">
-          <input id="iMarca" list="idlMarca" placeholder="Todas las marcas" autocomplete="off">
-          <input id="iClase" list="idlClase" placeholder="Todas las clases" autocomplete="off">
-          <input id="iSubc" list="idlSubc" placeholder="Todas las subclases" autocomplete="off">
+          <div><label>Sublínea</label><select id="iSub"></select></div>
+          <div><label>Marca</label><select id="iMarca"></select></div>
+          <div><label>Clase</label><select id="iClase"></select></div>
+          <div><label>Subclase</label><select id="iSubc"></select></div>
         </div>
-        <datalist id="idlSub"></datalist><datalist id="idlMarca"></datalist><datalist id="idlClase"></datalist><datalist id="idlSubc"></datalist>
+        <button class="btn ghost hide" id="iScopeClear" style="width:100%;margin-top:8px">✕ Quitar filtros</button>
         <div class="invkpis">
           <div class="invkpi"><b id="ikProd">0</b><span>Productos</span></div>
           <div class="invkpi"><b id="ikTaken">0</b><span>Contados</span></div>
@@ -1333,13 +1336,15 @@ function invPass(p,ex){
   return true;
 }
 function invDistinct(getCode,getName,ex){ var seen={},out=[]; for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i]; if(!invPass(p,ex))continue; var c=getCode(p); if(!c)continue; if(!seen[c]){seen[c]=1;out.push({code:c,name:getName(p)});} } out.sort(function(a,b){return (a.name||'').localeCompare(b.name||'','es');}); return out; }
-function invFillCombo(inpId,dlId,items,cur){ var inp=$(inpId),dl=$(dlId); var map={},rev={},h=''; items.forEach(function(it){var nm=it.name||it.code; map[up(nm)]=it.code; rev[it.code]=nm; h+='<option value="'+esc(nm)+'"></option>';}); dl.innerHTML=h; inp._map=map; var k=invKey(inpId); if(cur&&!rev[cur]){INV.scope[k]='';cur='';} if(document.activeElement!==inp) inp.value=cur?rev[cur]:''; }
 function invKey(id){ return {iSub:'sub',iMarca:'marca',iClase:'clase',iSubc:'subc'}[id]; }
 function invBuildScope(){
-  invFillCombo('iSub','idlSub',invDistinct(function(p){return p.sub;},function(p){return p.subN;},'sub'),INV.scope.sub);
-  invFillCombo('iMarca','idlMarca',invDistinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},'marca'),INV.scope.marca);
-  invFillCombo('iClase','idlClase',invDistinct(function(p){return p.clase;},function(p){return p.claseN;},'clase'),INV.scope.clase);
-  invFillCombo('iSubc','idlSubc',invDistinct(function(p){return p.subc;},function(p){return p.subcN;},'subc'),INV.scope.subc);
+  fillSelect($('iSub'),invDistinct(function(p){return p.sub;},function(p){return p.subN;},'sub'),INV.scope.sub,'Todas las sublíneas');
+  fillSelect($('iMarca'),invDistinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},'marca'),INV.scope.marca,'Todas las marcas');
+  fillSelect($('iClase'),invDistinct(function(p){return p.clase;},function(p){return p.claseN;},'clase'),INV.scope.clase,'Todas las clases');
+  fillSelect($('iSubc'),invDistinct(function(p){return p.subc;},function(p){return p.subcN;},'subc'),INV.scope.subc,'Todas las subclases');
+  INV.scope.sub=$('iSub').value; INV.scope.marca=$('iMarca').value; INV.scope.clase=$('iClase').value; INV.scope.subc=$('iSubc').value;
+  var active=(INV.scope.sub?1:0)+(INV.scope.marca?1:0)+(INV.scope.clase?1:0)+(INV.scope.subc?1:0);
+  var cb=$('iScopeClear'); if(cb) cb.classList.toggle('hide',active===0);
 }
 function invScoped(){ return PRODUCTS.filter(function(p){ return invPass(p,''); }); }
 function beep(ok){ try{ var c=new (window.AudioContext||window.webkitAudioContext)(); var o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination); o.frequency.value=ok?880:200; g.gain.value=.07; o.start(); setTimeout(function(){o.stop();c.close();},ok?90:200);}catch(e){} }
@@ -1391,8 +1396,10 @@ function renderInv(){
   $('iLastCard').classList.toggle('hide', !INV.started);
   $('iFinish').classList.toggle('hide', !INV.started);
   $('iStart').classList.toggle('hide', INV.started);
-  var lockable=$('itTake').querySelectorAll('.invscope input');
+  $('iScopeCard').classList.toggle('scopelock', INV.started);
+  var lockable=$('itTake').querySelectorAll('.invscope select');
   Array.prototype.forEach.call(lockable,function(i){ i.disabled=INV.started; i.style.opacity=INV.started?'.6':'1'; });
+  var sc=$('iScopeClear'); if(sc) sc.classList.toggle('hide', INV.started || !(INV.scope.sub||INV.scope.marca||INV.scope.clase||INV.scope.subc));
   var ps=invScoped();
   $('ikProd').textContent=ps.length;
   var taken=0,falta=0; ps.forEach(function(p){ var s=invStat(p); if(p.sku in INV.counts)taken++; if(s.fis<p.stock)falta+=(p.stock-s.fis); });
@@ -1727,10 +1734,10 @@ function init(){
   impInp.addEventListener('change',function(e){ if(e.target.files[0])invImportFile(e.target.files[0]); e.target.value=''; }); document.body.appendChild(impInp);
   $('iImport').onclick=function(){ impInp.click(); };
   $('iFinish').onclick=invFinish;
-  ['iSub','iMarca','iClase','iSubc'].forEach(function(id){ var inp=$(id);
-    inp.addEventListener('change',function(){ var v=(inp.value||'').trim(); INV.scope[invKey(id)]= v?(inp._map[up(v)]!=null?inp._map[up(v)]:''):''; invBuildScope(); renderInv(); });
-    inp.addEventListener('input',function(){ if(!inp.value.trim()){ INV.scope[invKey(id)]=''; invBuildScope(); renderInv(); } });
+  ['iSub','iMarca','iClase','iSubc'].forEach(function(id){
+    $(id).addEventListener('change',function(){ INV.scope[invKey(id)]=this.value; invBuildScope(); renderInv(); });
   });
+  $('iScopeClear').onclick=function(){ INV.scope={sub:'',marca:'',clase:'',subc:''}; invBuildScope(); renderInv(); };
   $('manualGo').onclick=function(){ var v=$('manualEan').value.trim(); if(v)onScanResult(v); };
   $('manualEan').addEventListener('keydown',function(e){ if(e.key==='Enter'){var v=this.value.trim();if(v)onScanResult(v);} });
 
