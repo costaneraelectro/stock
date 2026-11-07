@@ -650,6 +650,7 @@ var CLOUD = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('PEGA_AQUI'
 var CURRENT=null;      // usuario en sesión (local o nube)
 var REGISTERING=false; // evita carreras con el listener de sesión de Firebase
 var CATSUB=null;       // suscripción en tiempo real al catálogo
+var CATFECHA=null;     // última fecha de stock vista (para avisar al actualizarse)
 
 var PALETTE=[
   {name:'Falabella',c:'#aad503',d:'#7fa002',ink:'#20320a'},
@@ -687,6 +688,16 @@ function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;',
 function deacc(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
 function up(s){return deacc(s).toUpperCase();}
 function toast(m){var t=$('toast');t.innerHTML=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('show');},2200);}
+function notifyPermAsk(){ try{ if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission().catch(function(){}); } }catch(e){} }
+function notifyEnabled(){ try{ return ('Notification' in window) && Notification.permission==='granted'; }catch(e){ return false; } }
+function notifyStockUpdate(){
+  var fecha=META&&META.fecha?new Date(META.fecha).toLocaleString('es-CL'):'';
+  var body='Se actualizó el stock de la tienda'+(META&&META.archivo?' ('+META.archivo+')':'')+'. '+PRODUCTS.length+' productos.';
+  toast('📦 Stock actualizado'+(fecha?' · '+esc(fecha):''));
+  if(navigator.vibrate)navigator.vibrate([60,40,60]);
+  try{ if(notifyEnabled()){ var n=new Notification('📦 Stock actualizado', {body:body, icon:'icons/icon-180.png', tag:'stock-update'});
+    n.onclick=function(){ try{window.focus();}catch(e){} n.close(); }; } }catch(e){}
+}
 function normBrand(b){return (b||'').trim().toUpperCase();}
 function brandDisplay(b){b=normBrand(b);if(BRAND_NAMES[b])return BRAND_NAMES[b];return b.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(m){return m.toUpperCase();});}
 function loadScript(src){return new Promise(function(res,rej){if(document.querySelector('script[src="'+src+'"]')){res();return;}var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('No se pudo cargar '+src));};document.head.appendChild(s);});}
@@ -849,7 +860,11 @@ var Cloud={
   subscribeCatalog(){
     var self=this; if(CATSUB){ try{CATSUB();}catch(e){} CATSUB=null; }
     try{ CATSUB=this.fn.onSnapshot(this.fn.doc(this.db,'catalogo','meta'), function(){
-      self.loadCatalog().then(function(){ buildFilters(); render(); updateBanner(); if($('setSheet').classList.contains('show')) renderConfig(); }).catch(function(){});
+      self.loadCatalog().then(function(){ buildFilters(); render(); updateBanner(); if($('setSheet').classList.contains('show')) renderConfig();
+        var f=META&&META.fecha?String(META.fecha):'';
+        if(CATFECHA && f && f!==CATFECHA){ notifyStockUpdate(); }
+        CATFECHA=f;
+      }).catch(function(){});
     }); }catch(e){}
   }
 };
@@ -1258,10 +1273,15 @@ function renderProfile(){
   h+='<div class="field"><label>Clave nueva</label><input id="pfNew" type="password" autocomplete="off" placeholder="mín. '+(CLOUD?6:4)+' caracteres"></div>';
   h+='<div class="field"><label>Repetir clave nueva</label><input id="pfNew2" type="password" autocomplete="off"></div>';
   h+='<button class="btn" id="pfPass" style="width:100%">Actualizar contraseña</button></div>';
+  var notifState=('Notification' in window)?Notification.permission:'no';
+  h+='<div class="sec"><h4>Avisos</h4><div class="setrow"><div><div style="font-weight:700">Avisar cuando se actualice el stock</div><div style="font-size:12px;color:var(--mut)">'+
+     (notifState==='granted'?'✅ Activados':(notifState==='denied'?'🚫 Bloqueados (actívalos en el navegador)':(notifState==='no'?'Este dispositivo no admite avisos':'Toca para activar')))+'</div></div>'+
+     (notifState==='default'?'<button class="btn" id="pfNotif">🔔 Activar</button>':'')+'</div></div>';
   h+='<div class="sec"><button class="btn ghost" id="pfLogout" style="width:100%">Cerrar sesión</button></div>';
   pad.innerHTML=h;
   $('pfSave').onclick=profileSave;
   $('pfPass').onclick=profileChangePass;
+  var pn=$('pfNotif'); if(pn) pn.onclick=function(){ notifyPermAsk(); setTimeout(renderProfile,400); };
   $('pfLogout').onclick=function(){ closeSheet('profSheet'); logout(); };
 }
 function profMsg(kind,txt){ var m=$('profMsg'); if(m) m.innerHTML='<div class="msg '+kind+'">'+txt+'</div>'; }
@@ -1435,7 +1455,7 @@ function closeScanner(){ scanState.running=false; INV.scanRoute=false; cancelAni
   if(scanState.stream){scanState.stream.getTracks().forEach(function(t){t.stop();});scanState.stream=null;} $('scan').classList.remove('show'); }
 
 /* ===== Gate / navegación ===== */
-function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; $('btnInv').classList.toggle('hide', !canInv()); $('btnSet').classList.toggle('hide', !isAdmin()); buildFilters(); render(); updateBanner(); }
+function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; $('btnInv').classList.toggle('hide', !canInv()); $('btnSet').classList.toggle('hide', !isAdmin()); buildFilters(); render(); updateBanner(); if(CLOUD && !showApp._asked){ showApp._asked=true; setTimeout(notifyPermAsk,1500); } }
 function showGate(){ $('app').hidden=true; $('gate').classList.remove('hide'); switchTab('login'); $('lgUser').value=''; $('lgPass').value=''; }
 function switchTab(which){
   var lg=which==='login';
