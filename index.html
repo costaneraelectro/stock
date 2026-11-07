@@ -412,6 +412,12 @@ body.xmas #btnTree{animation:treeSwing 2.4s ease-in-out infinite}
 .invscope label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.3px; color:var(--mut); font-weight:800; margin:0 0 3px 2px}
 .invscope select{width:100%; padding:11px 10px; font-size:15px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
 .invscope input{width:100%; padding:12px; font-size:16px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.iccam-head{display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px; margin-bottom:8px}
+.iccam-wrap{position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:12px; overflow:hidden}
+.iccam-wrap video{width:100%; height:100%; object-fit:cover; display:block}
+.iccam-line{position:absolute; left:6%; right:6%; top:50%; height:2px; background:#ff3b30; box-shadow:0 0 8px #ff3b30; animation:scanmove2 2s ease-in-out infinite}
+@keyframes scanmove2{0%,100%{top:24%}50%{top:76%}}
+#iProgress{margin-top:0 !important; margin-bottom:12px}
 .invkpis{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px}
 .invkpi{background:var(--bg); border-radius:12px; padding:10px; text-align:center}
 .invkpi b{display:block; font-size:20px; font-weight:900}
@@ -642,7 +648,7 @@ body.xmas #btnTree{animation:treeSwing 2.4s ease-in-out infinite}
     </div>
 
     <div id="itTake">
-      <div class="invcard">
+      <div class="invcard" id="iHistCard">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h4 style="margin:0;flex:1">Historial de inventarios</h4>
           <button class="minibtn" id="iImport">⬆ Importar</button>
           <button class="minibtn bc" id="iNew">+ Nuevo</button></div>
@@ -666,7 +672,7 @@ body.xmas #btnTree{animation:treeSwing 2.4s ease-in-out infinite}
         <button class="btn primary" id="iStart" style="width:100%;margin-top:10px">▶ Comenzar a escanear</button>
       </div>
       <div class="invcard hide" id="iScanCard">
-        <h4>Escanear · escribir código o descripción</h4>
+        <h4 id="iScanTitle" style="margin:0 0 8px">Escanear · código, cámara o buscar</h4>
         <div class="invscan">
           <input id="iCode" autocomplete="off" placeholder="UPC/EAN, SKU o parte de la descripción" enterkeyhint="done">
           <button class="btn primary" id="iAdd" style="flex:0 0 auto;padding:0 18px">Sumar</button>
@@ -678,6 +684,16 @@ body.xmas #btnTree{animation:treeSwing 2.4s ease-in-out infinite}
           <button class="btn" id="iPaste" style="flex:0 0 auto">📋</button>
         </div>
         <div id="iMatches"></div>
+      </div>
+      <div class="invcard hide" id="iCamCard">
+        <div class="iccam-head"><span>📷 Escáner de cámara</span><span id="iCamStatus" style="flex:1;color:var(--mut);font-weight:600;font-size:12px">—</span><button class="minibtn" id="iCamClose">Cerrar</button></div>
+        <div class="iccam-wrap"><video id="iVideo" playsinline muted></video><div class="iccam-line"></div></div>
+        <div style="font-size:11.5px;color:var(--mut);margin-top:8px">Apunta al código. Cada lectura suena y se suma abajo; puedes seguir sin cerrar la cámara.</div>
+      </div>
+      <div class="invkpis hide" id="iProgress">
+        <div class="invkpi"><b id="pgTaken">0</b><span>Contados</span></div>
+        <div class="invkpi"><b id="pgFalta">0</b><span>Faltan</span></div>
+        <div class="invkpi"><b id="pgExc">0</b><span>Excedentes</span></div>
       </div>
       <div class="invcard hide" id="iLastCard">
         <h4>Últimos tomados</h4>
@@ -1629,6 +1645,36 @@ function closeScanner(){ scanState.running=false; INV.scanRoute=false; cancelAni
   try{ if(scanState.zxing){scanState.zxing.reset();scanState.zxing=null;} }catch(e){}
   if(scanState.stream){scanState.stream.getTracks().forEach(function(t){t.stop();});scanState.stream=null;} $('scan').classList.remove('show'); }
 
+/* ===== Cámara INLINE para tomar inventario (no tapa la pantalla) ===== */
+var invCam={stream:null,raf:0,detector:null,zxing:null,running:false,last:'',lastT:0};
+async function invCamOpen(){
+  var card=$('iCamCard'); card.classList.remove('hide');
+  $('iCamStatus').textContent='Iniciando cámara…'; invCam.running=true;
+  try{ card.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
+  try{ var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    invCam.stream=stream; var v=$('iVideo'); v.srcObject=stream; await v.play(); $('iCamStatus').textContent='Buscando código…';
+    if('BarcodeDetector' in window){ try{ var fmts=await window.BarcodeDetector.getSupportedFormats();
+      invCam.detector=new window.BarcodeDetector({formats:fmts.filter(function(f){return /ean|upc|code_128|code_39|itf|codabar/.test(f);})}); invCamLoop(); return; }catch(e){} }
+    await invCamZxing();
+  }catch(e){ $('iCamStatus').textContent='No se pudo abrir la cámara. Escribe el código.'; console.error(e); }
+}
+function invCamLoop(){ if(!invCam.running)return; invCam.detector.detect($('iVideo')).then(function(codes){ if(codes&&codes.length){ invCamHit(codes[0].rawValue); } invCam.raf=requestAnimationFrame(invCamLoop); }).catch(function(){ invCam.raf=requestAnimationFrame(invCamLoop); }); }
+async function invCamZxing(){ try{ await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js');
+  if(typeof ZXing==='undefined'){ $('iCamStatus').textContent='Escribe el código abajo.'; return; }
+  var reader=new ZXing.BrowserMultiFormatReader(); invCam.zxing=reader;
+  reader.decodeFromVideoDevice(null,'iVideo',function(result){ if(result)invCamHit(result.getText()); }); }catch(e){ $('iCamStatus').textContent='Escribe el código abajo.'; } }
+function invCamHit(code){ code=(code||'').trim(); if(!code)return; var now=Date.now();
+  if(code===invCam.last && now-invCam.lastT<1600) return;   // evita doble lectura del mismo código
+  invCam.last=code; invCam.lastT=now;
+  $('iCamStatus').textContent='✓ '+code;
+  invAdd(code, +($('iQty').value||1));   // suma y refresca contados / últimos tomados; la cámara sigue abierta
+}
+function invCamClose(){ invCam.running=false; cancelAnimationFrame(invCam.raf);
+  try{ if(invCam.zxing){invCam.zxing.reset();invCam.zxing=null;} }catch(e){}
+  if(invCam.stream){ invCam.stream.getTracks().forEach(function(t){t.stop();}); invCam.stream=null; }
+  var v=$('iVideo'); if(v) v.srcObject=null; var c=$('iCamCard'); if(c) c.classList.add('hide'); }
+function invCamToggle(){ if($('iCamCard').classList.contains('hide')) invCamOpen(); else invCamClose(); }
+
 /* ===== Gate / navegación ===== */
 function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; $('btnInv').classList.toggle('hide', !canInv()); $('btnSet').classList.toggle('hide', !isAdmin()); buildFilters(); render(); updateBanner(); if(CLOUD && !showApp._asked){ showApp._asked=true; setTimeout(notifyPermAsk,1500); } }
 function showGate(){ $('app').hidden=true; $('gate').classList.remove('hide'); switchTab('login'); $('lgUser').value=''; $('lgPass').value=''; }
@@ -1713,7 +1759,7 @@ function invImportFile(file){
   r.readAsText(file);
 }
 function invStart(){ INV.started=true; renderInv(); setTimeout(function(){ var c=$('iCode'); if(c)c.focus(); },150); }
-function closeInv(){ INV.open=false; $('inv').classList.remove('show'); stopSuper(); }
+function closeInv(){ INV.open=false; invCamClose(); $('inv').classList.remove('show'); stopSuper(); }
 function invSwitch(t){
   ['take','diff','nf','super'].forEach(function(x){ $('it'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hide',x!==t); });
   Array.prototype.forEach.call(document.querySelectorAll('.invtabs button'),function(b){ b.classList.toggle('on', b.getAttribute('data-it')===t); });
@@ -1787,18 +1833,23 @@ function invAdd(codeRaw,qty){
 }
 function invStat(p){ var fis=INV.counts[p.sku]||0, dif=p.stock-fis, cls=fis===0?'lo':(fis>p.stock?'ex':(fis<p.stock?'lo':'ok')); return {fis:fis,dif:dif,cls:cls}; }
 function renderInv(){
+  // Al comenzar: se oculta "qué vas a tomar" y queda solo la vista de escaneo (hasta finalizar)
+  $('iScopeCard').classList.toggle('hide', INV.started);
+  $('iHistCard') && $('iHistCard').classList.toggle('hide', INV.started);
   $('iScanCard').classList.toggle('hide', !INV.started);
+  $('iProgress').classList.toggle('hide', !INV.started);
   $('iLastCard').classList.toggle('hide', !INV.started);
   $('iFinish').classList.toggle('hide', !INV.started);
   $('iStart').classList.toggle('hide', INV.started);
-  $('iScopeCard').classList.toggle('scopelock', INV.started);
-  var lockable=$('itTake').querySelectorAll('.invscope select');
-  Array.prototype.forEach.call(lockable,function(i){ i.disabled=INV.started; i.style.opacity=INV.started?'.6':'1'; });
+  if(!INV.started && $('iCamCard') && !$('iCamCard').classList.contains('hide')) invCamClose();
   var sc=$('iScopeClear'); if(sc) sc.classList.toggle('hide', INV.started || !(INV.scope.sub||INV.scope.marca||INV.scope.clase||INV.scope.subc));
+  var scopeTxt=[]; if(INV.scope.marca)scopeTxt.push(brandDisplay(INV.scope.marca)); if(INV.scope.sub)scopeTxt.push(INV.scope.sub); if(INV.scope.clase)scopeTxt.push(INV.scope.clase); if(INV.scope.subc)scopeTxt.push(INV.scope.subc);
+  var st=$('iScanTitle'); if(st) st.textContent=scopeTxt.length?('Tomando: '+scopeTxt.join(' · ')):'Tomando: todo el inventario';
   var ps=invScoped();
   $('ikProd').textContent=ps.length;
-  var taken=0,falta=0; ps.forEach(function(p){ var s=invStat(p); if(p.sku in INV.counts)taken++; if(s.fis<p.stock)falta+=(p.stock-s.fis); });
+  var taken=0,falta=0,exc=0; ps.forEach(function(p){ var s=invStat(p); if(p.sku in INV.counts)taken++; if(s.fis<p.stock)falta+=(p.stock-s.fis); if(s.fis>p.stock)exc+=(s.fis-p.stock); });
   $('ikTaken').textContent=taken; $('ikFalta').textContent=falta;
+  $('pgTaken').textContent=taken; $('pgFalta').textContent=falta; $('pgExc').textContent=exc;
   // últimos tomados (5 distintos)
   var seen={},items=[]; for(var i=0;i<INV.history.length;i++){ var h=INV.history[i]; if(seen[h.sku])continue; seen[h.sku]=1; items.push(h); if(items.length>=5)break; }
   var box=$('iLast');
@@ -1983,11 +2034,11 @@ function invPush(){
 }
 function invFinish(){
   if(!confirm('¿Finalizar el inventario? Se marcará como terminado (queda en el historial, puedes descargarlo o compartirlo).')) return;
-  INV.status='finalizado'; invSaveLocal();
+  INV.status='finalizado'; INV.started=false; invCamClose(); invSaveLocal();
   if(CLOUD&&Cloud.db){ var data={uid:invUid(),name:INV.name,scope:INV.scope,counts:INV.counts,summary:invSummary(),status:'finalizado',updatedMs:Date.now()}; Cloud.saveInv(INV.docId,data).then(function(){INV.pushErr=false;}).catch(function(e){ toast('⚠️ No se pudo guardar en la nube: '+((e&&e.code)||'error')); }); }
   toast('✓ Inventario finalizado');
   invDownloadCSV(INV.counts, INV.name);
-  renderInvHist();
+  renderInv(); renderInvHist();
 }
 /* ---- CSV formato ORIGINAL (17 cols + STOCK FISICO), 1 fila por UPC, latin1, CRLF ---- */
 function cleanNum(v){ if(typeof v!=='number') v=parseNum(v); if(Number.isInteger(v)) return String(v); return String(Math.round(v*100)/100).replace('.',','); }
@@ -2126,7 +2177,8 @@ function init(){
   $('iCode').addEventListener('input',function(){ invMatches(this.value); });
   $('iMinus').onclick=function(){ $('iQty').value=Math.max(1,(+$('iQty').value||1)-1); };
   $('iPlus').onclick=function(){ $('iQty').value=(+$('iQty').value||0)+1; };
-  $('iCam').onclick=function(){ INV.scanRoute=true; openScanner(); };
+  $('iCam').onclick=invCamToggle;
+  $('iCamClose').onclick=invCamClose;
   $('iSearch').onclick=invSearchOpen;
   $('iPaste').onclick=invPasteOpen;
   $('isClose').onclick=invSearchClose;
