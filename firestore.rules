@@ -15,7 +15,7 @@ service cloud.firestore {
     // Administradores raíz por correo (coincide con ROOT_ADMINS de la app: usuario@stockcostanera.web)
     function esRaiz() {
       return miCorreo() == 'admin@stockcostanera.web'
-          || miCorreo() == 'miguel.aranguiz@stockcostanera.web';
+          || miCorreo() == 'miguel.moraga@stockcostanera.web';
     }
     function esAdmin() {
       return firmado() && ( esRaiz() || (existoYo() && miFicha().rol == 'admin') );
