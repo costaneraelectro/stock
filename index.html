@@ -388,6 +388,16 @@ button:active:not(:disabled){transform:scale(.97)}
 .rdpop{background:color-mix(in srgb,#0f8a3d 12%,var(--card));border:1px solid color-mix(in srgb,#0f8a3d 30%,var(--line));border-radius:13px;padding:11px;margin-bottom:12px;font-size:13px;line-height:1.4}
 .rdpop b{font-weight:800}
 .ampwrap{display:inline-flex;flex:0 0 auto;cursor:pointer}
+/* ===== Navidad ===== */
+.snow{position:fixed; inset:0; pointer-events:none; z-index:200; overflow:hidden; display:none}
+body.xmas .snow{display:block}
+.snow .flake{position:absolute; top:-5%; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.25); opacity:.85; will-change:transform; animation:snowfall linear infinite}
+@keyframes snowfall{0%{transform:translateY(-10vh) translateX(0) rotate(0)}100%{transform:translateY(110vh) translateX(var(--drift,10px)) rotate(360deg)}}
+body.xmas header{background:linear-gradient(135deg,#0f8a3d,var(--accent),#b4151c)}
+body.xmas header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:4px; background:repeating-linear-gradient(90deg,#e23b3b 0 10px,#ffd34d 10px 20px,#2fa84f 20px 30px,#2a7fd4 30px 40px); opacity:.9}
+body.xmas #btnTree{animation:treeSwing 2.4s ease-in-out infinite}
+@keyframes treeSwing{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@media (prefers-reduced-motion: reduce){ .snow{display:none !important} body.xmas #btnTree{animation:none} }
 .apuesta{font-size:9.5px;font-weight:900;color:#fff;background:#b4151c;padding:2px 7px;border-radius:999px;white-space:nowrap}
 .treecard .ph .apuesta{position:absolute;top:8px;right:8px}
 .treecard,.treeitem{cursor:pointer}
@@ -693,6 +703,7 @@ button:active:not(:disabled){transform:scale(.97)}
   </div>
 </div>
 
+<div class="snow" id="snow" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1467,6 +1478,15 @@ function applyAccent(idx){ var p=PALETTE[idx]||PALETTE[0]; var r=document.docume
   var m=document.querySelector('meta[name=theme-color]'); if(m)m.setAttribute('content',p.c); localStorage.setItem(K.ACCENT,idx); }
 function applyTheme(){ var dark=localStorage.getItem(K.THEME)==='dark'; document.documentElement.setAttribute('data-theme',dark?'dark':'light'); var b=$('btnDark'); if(b)b.textContent=dark?'☀️':'🌙'; }
 function toggleDark(){ var dark=localStorage.getItem(K.THEME)!=='dark'; localStorage.setItem(K.THEME,dark?'dark':'light'); applyTheme(); }
+/* ===== Navidad: activo en noviembre y hasta el 25 de diciembre ===== */
+function isXmas(){ var n=new Date(), m=n.getMonth(), d=n.getDate(); return (m===10) || (m===11 && d<=25); }
+function buildSnow(){ var s=$('snow'); if(!s)return; var flakes=['❄','❅','❆','•']; var h='';
+  for(var i=0;i<16;i++){ var left=Math.round(Math.random()*100); var size=(Math.random()*12+8).toFixed(0); var dur=(Math.random()*8+7).toFixed(1); var del=(Math.random()*-12).toFixed(1); var drift=(Math.random()*60-30).toFixed(0);
+    h+='<span class="flake" style="left:'+left+'%;font-size:'+size+'px;animation-duration:'+dur+'s;animation-delay:'+del+'s;--drift:'+drift+'px">'+flakes[i%flakes.length]+'</span>'; }
+  s.innerHTML=h; }
+function applyXmas(){ var on=isXmas(); document.body.classList.toggle('xmas',on);
+  var bt=$('btnTree'); if(bt) bt.classList.toggle('hide',!on);
+  if(on){ if(!$('snow').childNodes.length) buildSnow(); } else { $('snow').innerHTML=''; } }
 
 /* ===== Configuración (protegida con clave) ===== */
 function openConfig(){ renderConfig(); openSheet('setSheet'); }
@@ -2058,7 +2078,7 @@ function renderSuper(rows){
 
 /* ===== Init ===== */
 function init(){
-  applyAccent(parseInt(localStorage.getItem(K.ACCENT)||'0',10)); applyTheme();
+  applyAccent(parseInt(localStorage.getItem(K.ACCENT)||'0',10)); applyTheme(); applyXmas();
   load();
   // input de archivo (creado dinámicamente para evitar duplicados)
   var fi=document.createElement('input'); fi.type='file'; fi.id='file2'; fi.className='filepick'; fi.accept='.txt,.gz,text/plain,application/gzip';
